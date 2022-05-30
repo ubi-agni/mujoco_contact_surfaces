@@ -1,0 +1,2 @@
+MujocoPlugins:
+  - type: mujoco_contact_surfaces/MujocoContactSurfacesPlugin

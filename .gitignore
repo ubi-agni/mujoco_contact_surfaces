@@ -1,32 +1,17 @@
-# Prerequisites
-*.d
+# vi stuff
+.*.sw?
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Python stuff
+*.pyc
 
-# Precompiled Headers
-*.gch
-*.pch
+# Data files
+*.dat
+*.csv
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# Emacs temp files
+.#*
 
-# Fortran module files
-*.mod
-*.smod
+# OSX Files
+.DS_Store
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+CATKIN_IGNORE
