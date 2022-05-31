@@ -1,4 +1,43 @@
 /**
+ *
+ * Parts of the code used to evaluate the contact surfaces (namely the methods evaluateContactSurfaces and passive_cb)
+ * are based on code of Drake which is licensed as follows:
+ *
+ * All components of Drake are licensed under the BSD 3-Clause License
+ * shown below. Where noted in the source code, some portions may
+ * be subject to other permissive, non-viral licenses.
+ *
+ * Copyright 2012-2022 Robot Locomotion Group @ CSAIL
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.  Redistributions
+ * in binary form must reproduce the above copyright notice, this list of
+ * conditions and the following disclaimer in the documentation and/or
+ * other materials provided with the distribution.  Neither the name of
+ * the Massachusetts Institute of Technology nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *
+ * The rest is licensed under the following license:
+ *
  * Software License Agreement (BSD 3-Clause License)
  *
  *  Copyright (c) 2022, Bielefeld University
@@ -174,7 +213,6 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 	// ;
 
 	std::unique_ptr<ContactSurface<double>> s;
-	// bool swap_geoms = false;
 	if (cp1->geom_type == SOFT and cp2->geom_type == SOFT) {
 		RigidTransform<double> p1 = getGeomPose(g1, d);
 		RigidTransform<double> p2 = getGeomPose(g2, d);
@@ -183,10 +221,8 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		                                                      hydroelastic_contact_representation);
 	} else {
 		if (cp1->geom_type == RIGID) {
-			// swap_geoms = true;
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
-			// std::swap(gc.g1, gc.g2);
 		}
 		RigidTransform<double> p1 = getGeomPose(g1, d);
 		RigidTransform<double> p2 = getGeomPose(g2, d);
@@ -204,8 +240,6 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		if (cp2->drake_id < cp1->drake_id) {
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
-			// std::swap(gc.g1, gc.g2);
-			// swap_geoms = !swap_geoms;
 		}
 		GeomCollision *gc = new GeomCollision(g1, g2, s.get());
 		evaluateContactSurface(m, d, gc);
@@ -349,7 +383,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			}
 
 			const Vector3<double> f_slip = -mu_regularized * that * fn;
-			
+
 			const Vector3<double> f = f_slip + fn * pc.n;
 
 			const mjtNum point[3]  = { pc.p[0], pc.p[1], pc.p[2] };
