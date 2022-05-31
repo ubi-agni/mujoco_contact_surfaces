@@ -1,6 +1,7 @@
 /**
  *
- * Parts of the code used to evaluate the contact surfaces (namely the methods evaluateContactSurfaces and passive_cb)
+ * Parts of the code used to evaluate the contact surfaces 
+ * (namely the methods evaluateContactSurfaces and passive_cb)
  * are based on code of Drake which is licensed as follows:
  *
  * All components of Drake are licensed under the BSD 3-Clause License
