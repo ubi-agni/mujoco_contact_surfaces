@@ -82,13 +82,6 @@
 
 namespace mujoco_contact_surfaces {
 
-using namespace drake;
-using namespace drake::geometry;
-using namespace drake::geometry::internal;
-using namespace drake::math;
-using namespace drake::multibody;
-using namespace drake::multibody::internal;
-
 // Map from data pointers to instances of the plugin. This instance is used in callback wrappers that are called from
 // mujoco in order to find the correct plugin instance to use.
 std::map<const mjData *, MujocoContactSurfacesPlugin *> instance_map;
@@ -166,11 +159,13 @@ double calcCombinedDissipation(ContactProperties *cp1, ContactProperties *cp2)
 
 MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 {
+	geomCollisions.clear();
+	contactProperties.clear();
 	instance_map.erase(d_.get());
 	if (instance_map.empty()) {
-		if (mjcb_passive == passive_cb_wrapper) {
-			mjcb_passive = default_passive_cb;
-		}
+		// if (mjcb_passive == passive_cb_wrapper) {
+		// 	mjcb_passive = default_passive_cb;
+		// }
 		for (int i = 0; i < mjNGEOMTYPES; ++i) {
 			for (int j = 0; j < mjNGEOMTYPES; ++j) {
 				if (mjCOLLISIONFUNC[i][j] == collision_cb_wrapper) {
@@ -188,8 +183,8 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	m_                    = m;
 	instance_map[d.get()] = this;
 	if (instance_map.size() == 1) {
-		default_passive_cb = mjcb_passive;
-		mjcb_passive       = passive_cb_wrapper;
+		// default_passive_cb = mjcb_passive;
+		// mjcb_passive       = passive_cb_wrapper;
 		initCollisionFunction();
 	}
 	parseMujocoCustomFields(m.get());
@@ -242,7 +237,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
 		}
-		GeomCollision *gc = new GeomCollision(g1, g2, s.get());
+		GeomCollision *gc = new GeomCollision(g1, g2, *s.get());
 		evaluateContactSurface(m, d, gc);
 		geomCollisions.push_back(gc);
 	}
@@ -252,7 +247,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 
 void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc)
 {
-	ContactSurface<double> *s = gc->s;
+	ContactSurface<double> *s = &gc->s;
 	int g1                    = gc->g1;
 	int g2                    = gc->g2;
 	ContactProperties *cp1    = contactProperties[g1];
@@ -336,6 +331,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
+	updateContactSurfaceVisualization();
 	const CoulombFriction<double> &geometryM_friction = CoulombFriction<double>{ 0.3, 0.3 }; // TODO paramter
 	const CoulombFriction<double> &geometryN_friction = CoulombFriction<double>{ 0.3, 0.3 };
 	const CoulombFriction<double> combined_friction =
@@ -395,8 +391,12 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
 		}
 	}
-
 	geomCollisions.clear();
+}
+
+void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
+{
+	passive_cb(model.get(), data.get());
 }
 
 void MujocoContactSurfacesPlugin::initCollisionFunction()
@@ -430,7 +430,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 	int vs_id = mj_name2id(m, mjOBJ_NUMERIC, (PREFIX + "VisualizeSurfaces").c_str());
 	if (vs_id >= 0) {
 		int vs_adr  = m->numeric_adr[vs_id];
-		int vs_size = m->numeric_size[vs_size];
+		int vs_size = m->numeric_size[vs_adr];
 		if (vs_size == 1) {
 			visualizeContactSurfaces = m->numeric_data[vs_adr];
 		}
@@ -512,7 +512,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
 								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh);
 							}
-							contactProperties[id] = cp;						
+							contactProperties[id] = cp;
 							break;
 						}
 						case mjGEOM_BOX: // box
@@ -573,6 +573,56 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 				}
 			}
 		}
+	}
+}
+
+void MujocoContactSurfacesPlugin::updateContactSurfaceVisualization()
+{
+	if (visualizeContactSurfaces) {
+		n_vGeom = 0;
+		std::uniform_real_distribution<float> uni(0., 1.);
+		std::default_random_engine re;
+		for (GeomCollision *gc : geomCollisions) {
+			ContactSurface<double> *s = &gc->s;
+			const mjtNum size[3]      = { 0.0015, 0.0015, 0.0015 };
+			if (!s->is_triangle()) {
+				PolygonSurfaceMesh<double> m = s->poly_mesh_W();
+				for (int f = 0; f < m.num_faces(); ++f) {
+					const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
+					const Vector3<double> &p_WQ = s->centroid(f);
+					const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
+					if (n_vGeom == MAX_VGEOM) {
+						break;
+					}
+					mjvGeom *g = vGeoms + n_vGeom++;
+					mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
+					SurfacePolygon p    = m.element(f);
+					Vector3<double> vp0 = m.vertex(p.vertex(p.num_vertices() - 1));
+					Vector3<double> n   = m.face_normal(f);
+					for (int v = 0; v < p.num_vertices(); ++v) {
+						Vector3<double> vp1 = m.vertex(p.vertex(v));
+						if (n_vGeom == MAX_VGEOM) {
+							break;
+						}
+						mjvGeom *g = vGeoms + n_vGeom++;
+						mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
+						mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+						vp0 = vp1;
+					}
+				}
+			}
+		}
+	}
+}
+
+void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
+{
+	if (visualizeContactSurfaces) {
+		int n = std::min(n_vGeom, scene->maxgeom);
+		for (int i = 0; i < n; ++i) {
+			scene->geoms[scene->ngeom++] = vGeoms[i];
+		}
+		n_vGeom = 0;
 	}
 }
 

@@ -76,6 +76,7 @@ using namespace drake::geometry::internal;
 using namespace drake::math;
 using namespace drake::multibody;
 using namespace drake::multibody::internal;
+using namespace MujocoSim;
 
 typedef enum _contactType
 {
@@ -144,10 +145,10 @@ typedef struct PointCollision
 typedef struct GeomCollision
 {
 	std::vector<PointCollision> pointCollisions;
-	ContactSurface<double> *s;
+	ContactSurface<double> s;
 	int g1;
 	int g2;
-	GeomCollision(int g1, int g2, ContactSurface<double> *s) : g1(g1), g2(g2), s(s){};
+	GeomCollision(int g1, int g2, ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
 
 class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
@@ -161,6 +162,9 @@ public:
 	// Called by mujoco
 	virtual void update();
 
+	virtual void passiveCallback(mjModelPtr model, mjDataPtr data);
+	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
+
 	// Called on reset
 	virtual void reset();
 	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
@@ -173,7 +177,8 @@ protected:
 
 private:
 	// Buffer of visual geoms
-	mjvGeom *vGeoms = new mjvGeom[10000];
+	const int MAX_VGEOM = 10000;
+	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
 	int n_vGeom     = 0;
 
 	const std::string PREFIX = "cs::";
@@ -186,6 +191,7 @@ private:
 	void initCollisionFunction();
 	std::vector<GeomCollision *> geomCollisions;
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
+	void updateContactSurfaceVisualization();
 };
 
 } // namespace mujoco_contact_surfaces

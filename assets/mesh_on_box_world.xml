@@ -21,10 +21,11 @@
   <custom>
     <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
     <text name="cs::HydroelasticContactRepresentation" data="kPolygon"/>
+    <numeric name="cs::VisualizeSurfaces" data="1"/>
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     For meshes the resolutionHint is the scale of the mesh. -->
-    <numeric name="cs::box" data="5e4 5.0 0"/>
+    <numeric name="cs::box" data="5e4 5.0 0.05"/>
     <numeric name="cs::duck" data="0 1.0 0.1"/>
     <!-- TODO: An absolute path to an .obj file has to be inserted here -->
     <text name="cs::duck" data="<absolute_path>/meshes/rubber_duck.obj"/>
