@@ -1,0 +1,43 @@
+<mujoco model="box_on_plane">
+  <compiler meshdir="asset" texturedir="asset"/>
+  <statistic extent="1.5" meansize=".05"/>
+  <option timestep="0.001" jacobian="sparse" gravity="0 0 -9.81"/>
+  <size nconmax="3000" njmax="4000"/>
+  <visual>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <quality shadowsize="4096"/>
+    <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3"/>
+    <scale forcewidth="0.001" />
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+    <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+      width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>
+    <material name="matplane" reflectance="0.0" texture="texplane" texrepeat="1 1" texuniform="true"/>
+  </asset>
+
+  <custom>
+    <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
+    <text name="cs::HydroelasticContactRepresentation" data="kPolygon"/>
+    <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
+    A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
+    A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
+    <numeric name="cs::cylinder0" data="0 1.0 0.1"/>
+    <numeric name="cs::cylinder1" data="5e4 5.0 0.05"/>
+  </custom>
+
+  <worldbody>
+    <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
+    <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" castshadow="false"/>
+    <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane" />
+    <body name="body_cylinder0" pos="0 0.0 0.1" >
+      <freejoint/>
+      <geom name="cylinder0" type="cylinder" size="0.1 0.1" rgba="0.7 0.7 0.7 0.5"/>
+    </body> 
+    <body name="body_cylinder1" pos="0 0.0 0.3" euler="90 0 0" >
+      <freejoint/>
+      <geom name="cylinder1" type="cylinder" size="0.05 0.1" rgba="0.7 0.7 0.7 0.5"/>
+    </body> 
+  </worldbody>
+</mujoco>
