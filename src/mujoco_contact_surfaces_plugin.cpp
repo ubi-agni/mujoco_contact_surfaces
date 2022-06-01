@@ -1,6 +1,6 @@
 /**
  *
- * Parts of the code used to evaluate the contact surfaces 
+ * Parts of the code used to evaluate the contact surfaces
  * (namely the methods evaluateContactSurfaces and passive_cb)
  * are based on code of Drake which is licensed as follows:
  *
@@ -208,20 +208,20 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 	int t2                 = m->geom_type[g2];
 	ContactProperties *cp1 = contactProperties[g1];
 	ContactProperties *cp2 = contactProperties[g2];
-	if (cp1 == NULL or cp2 == NULL or (cp1->geom_type == RIGID and cp2->geom_type == RIGID)) {
+	if (cp1 == NULL or cp2 == NULL or (cp1->contact_type == RIGID and cp2->contact_type == RIGID)) {
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 	}
 	// ;
 
 	std::unique_ptr<ContactSurface<double>> s;
-	if (cp1->geom_type == SOFT and cp2->geom_type == SOFT) {
+	if (cp1->contact_type == SOFT and cp2->contact_type == SOFT) {
 		RigidTransform<double> p1 = getGeomPose(g1, d);
 		RigidTransform<double> p2 = getGeomPose(g2, d);
 		s = ComputeContactSurfaceFromCompliantVolumes<double>(cp1->drake_id, *cp1->pf, *cp1->bvh_v, p1, cp2->drake_id,
 		                                                      *cp2->pf, *cp2->bvh_v, p2,
 		                                                      hydroelastic_contact_representation);
 	} else {
-		if (cp1->geom_type == RIGID) {
+		if (cp1->contact_type == RIGID) {
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
 		}
@@ -438,10 +438,10 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 	}
 	// parse geom contact properties
 	for (int i = 0; i < m->nnumeric; ++i) {
-		std::string s = mj_id2name(m, mjOBJ_NUMERIC, i);
-		if (s.rfind(PREFIX, 0) == 0) {
-			s      = s.substr(PREFIX.length());
-			int id = mj_name2id(m, mjOBJ_GEOM, s.c_str());
+		std::string full_name = mj_id2name(m, mjOBJ_NUMERIC, i);
+		if (full_name.rfind(PREFIX, 0) == 0) {
+			std::string s = full_name.substr(PREFIX.length());
+			int id        = mj_name2id(m, mjOBJ_GEOM, s.c_str());
 			if (id >= 0) {
 				int adr  = m->numeric_adr[i];
 				int size = m->numeric_size[i];
@@ -521,8 +521,34 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							break;
 						}
 						case mjGEOM_MESH: // mesh
-							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "mesh collision not implemented yet");
+						{
+							// search for mesh .obj file
+							int filename_id = mj_name2id(m, mjOBJ_TEXT, full_name.c_str());
+							if (filename_id >= 0) {
+								int filename_adr = m->text_adr[filename_id];
+								if (filename_adr >= 0) {
+									int filename_size = m->text_size[filename_id];
+									std::string filename(&m->text_data[filename_adr], filename_size);
+									Mesh *mesh = new Mesh(filename, resolutionHint);
+									if (hydroElasticModulus > 0) {
+										// soft mesh
+										ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
+										                      "soft mesh collision not implemented yet");
+									} else {									
+										TriangleSurfaceMesh<double> *sm = new TriangleSurfaceMesh<double>(
+										    ReadObjToTriangleSurfaceMesh(filename, resolutionHint));
+										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
+										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+										cp = new ContactProperties(id, s, RIGID, mesh, sm, bvh);
+									}
+								} else {
+									ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces", "No .obj file defined for the mesh " << s);
+								}
+							} else {
+								ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces", "No .obj file defined for the mesh " << s);
+							}
 							break;
+						}
 					}
 				}
 			}

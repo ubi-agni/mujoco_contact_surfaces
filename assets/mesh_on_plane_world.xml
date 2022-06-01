@@ -1,5 +1,5 @@
-<mujoco model="sphere_on_plane">
-  <compiler meshdir="asset" texturedir="asset"/>
+<mujoco model="box_on_plane">
+  <compiler meshdir="meshes"/>
   <statistic extent="1.5" meansize=".05"/>
   <option timestep="0.001" jacobian="sparse" gravity="0 0 -9.81"/>
   <size nconmax="3000" njmax="4000"/>
@@ -15,6 +15,7 @@
     <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
       width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>
     <material name="matplane" reflectance="0.0" texture="texplane" texrepeat="1 1" texuniform="true"/>
+    <mesh file="rubber_duck.stl" scale="0.1 0.1 0.1"/>
   </asset>
 
   <custom>
@@ -22,18 +23,20 @@
     <text name="cs::HydroelasticContactRepresentation" data="kPolygon"/>
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
-    A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
+    For meshes the resolutionHint is the scale of the mesh. -->
     <numeric name="cs::ground" data="0 1.0 0.1"/>
-    <numeric name="cs::sphere0" data="5e4 5.0 0.05"/>
+    <numeric name="cs::duck" data="5e4 5.0 0.1"/>
+    <!-- TODO: An absolute path to an .obj file has to be inserted here -->
+    <text name="cs::duck" data="<absolute_path>/meshes/rubber_duck.obj"/>
   </custom>
 
   <worldbody>
     <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
     <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" castshadow="false"/>
     <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane" />
-    <body name="body_sphere0" pos="0 0.0 0.3" >
+    <body name="body_duck" pos="0 0.0 0.1" >
       <freejoint/>
-      <geom name="sphere0" type="sphere" size="0.08 0.08 0.08" rgba="0.7 0.7 0.7 0.5"/>
+      <geom name="duck" type="mesh" mesh="rubber_duck"/>
     </body> 
   </worldbody>
 </mujoco>

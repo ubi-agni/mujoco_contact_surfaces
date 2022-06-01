@@ -45,7 +45,6 @@
 
 #include "mujoco.h"
 
-#include "drake/math/rigid_transform.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
@@ -56,9 +55,10 @@
 #include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
-#include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
@@ -87,7 +87,7 @@ typedef struct ContactProperties
 	const int mujoco_geom_id;
 	GeometryId drake_id;
 	const std::string geom_name;
-	const contactType geom_type;
+	const contactType contact_type;
 	const Shape *shape;
 	const VolumeMesh<double> *vm;
 	const VolumeMeshFieldLinear<double, double> *pf;
@@ -97,35 +97,35 @@ typedef struct ContactProperties
 	const double hydroelastic_modulus;
 	const double dissipation;
 
-	ContactProperties(int geom_id, std::string geom_name, contactType geom_type, Shape *shape, VolumeMesh<double> *vm,
+	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape, VolumeMesh<double> *vm,
 	                  VolumeMeshFieldLinear<double, double> *pf, Bvh<Obb, VolumeMesh<double>> *bvh_v,
 	                  double hydroelastic_modulus, double dissipation)
 	    : mujoco_geom_id(geom_id)
 	    , drake_id(GeometryId::get_new_id())
 	    , geom_name(geom_name)
-	    , geom_type(geom_type)
+	    , contact_type(contact_type)
 	    , shape(shape)
 	    , vm(vm)
 	    , pf(pf)
 	    , bvh_v(bvh_v)
 	    , hydroelastic_modulus(hydroelastic_modulus)
 	    , dissipation(dissipation){};
-	ContactProperties(int geom_id, std::string geom_name, contactType geom_type, Shape *shape,
+	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape,
 	                  TriangleSurfaceMesh<double> *sm, Bvh<Obb, TriangleSurfaceMesh<double>> *bvh_s)
 	    : mujoco_geom_id(geom_id)
 	    , drake_id(GeometryId::get_new_id())
 	    , geom_name(geom_name)
-	    , geom_type(geom_type)
+	    , contact_type(contact_type)
 	    , shape(shape)
 	    , sm(sm)
 	    , bvh_s(bvh_s)
 	    , hydroelastic_modulus(std::numeric_limits<double>::infinity())
 	    , dissipation(1.0){};
-	ContactProperties(int geom_id, std::string geom_name, contactType geom_type)
+	ContactProperties(int geom_id, std::string geom_name, contactType contact_type)
 	    : mujoco_geom_id(geom_id)
 	    , drake_id(GeometryId::get_new_id())
 	    , geom_name(geom_name)
-	    , geom_type(geom_type)
+	    , contact_type(contact_type)
 	    , hydroelastic_modulus(std::numeric_limits<double>::infinity())
 	    , dissipation(1.0){};
 } ContactProperties;
@@ -174,7 +174,6 @@ private:
 	mjvGeom *vGeoms = new mjvGeom[10000];
 	int n_vGeom     = 0;
 
-
 	const std::string PREFIX = "cs::";
 
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kPolygon;
@@ -183,7 +182,7 @@ private:
 	std::map<int, ContactProperties *> contactProperties{};
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
-	std::vector<GeomCollision*> geomCollisions;
+	std::vector<GeomCollision *> geomCollisions;
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
 };
 
