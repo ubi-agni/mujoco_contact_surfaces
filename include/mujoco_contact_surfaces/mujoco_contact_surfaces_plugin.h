@@ -49,6 +49,8 @@
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_box_field.h"
+#include "drake/geometry/proximity/make_cylinder_mesh.h"
+#include "drake/geometry/proximity/make_cylinder_field.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/obb.h"

@@ -460,9 +460,9 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							if (hydroElasticModulus > 0) {
 								ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "soft plane collision not implemented yet");
 							} else {
-								cp = new ContactProperties(id, s, RIGID);
+								cp                    = new ContactProperties(id, s, RIGID);
+								contactProperties[id] = cp;
 							}
-							contactProperties[id] = cp;
 							break;
 						case mjGEOM_HFIELD: // height field
 							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "hfield collision not implemented yet");
@@ -494,8 +494,27 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "ellipsoid collision not implemented yet");
 							break;
 						case mjGEOM_CYLINDER: // cylinder
-							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "cylinder collision not implemented yet");
+						{
+							Cylinder *cylinder = new Cylinder(m->geom_size[3 * id], 2 * m->geom_size[3 * id + 1]);
+							if (hydroElasticModulus > 0) {
+								VolumeMesh<double> *vm;
+								if (resolutionHint > 0) {
+									vm = new VolumeMesh<double>(MakeCylinderVolumeMeshWithMa<double>(*cylinder, resolutionHint));
+								}
+								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+								    MakeCylinderPressureField<double>(*cylinder, vm, hydroElasticModulus));
+								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+								cp =
+								    new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation);
+							} else {
+								TriangleSurfaceMesh<double> *sm =
+								    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, resolutionHint));
+								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh);
+							}
+							contactProperties[id] = cp;						
 							break;
+						}
 						case mjGEOM_BOX: // box
 						{
 							Box *box =
@@ -534,12 +553,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 										// soft mesh
 										ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
 										                      "soft mesh collision not implemented yet");
-									} else {									
+									} else {
 										TriangleSurfaceMesh<double> *sm = new TriangleSurfaceMesh<double>(
 										    ReadObjToTriangleSurfaceMesh(filename, resolutionHint));
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp = new ContactProperties(id, s, RIGID, mesh, sm, bvh);
+										cp                    = new ContactProperties(id, s, RIGID, mesh, sm, bvh);
+										contactProperties[id] = cp;
 									}
 								} else {
 									ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces", "No .obj file defined for the mesh " << s);
