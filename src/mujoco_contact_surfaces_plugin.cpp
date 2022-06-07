@@ -159,13 +159,11 @@ double calcCombinedDissipation(ContactProperties *cp1, ContactProperties *cp2)
 
 MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 {
+	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Shutting down mujoco_contact_surfaces plugin ...");
 	geomCollisions.clear();
 	contactProperties.clear();
 	instance_map.erase(d_.get());
 	if (instance_map.empty()) {
-		// if (mjcb_passive == passive_cb_wrapper) {
-		// 	mjcb_passive = default_passive_cb;
-		// }
 		for (int i = 0; i < mjNGEOMTYPES; ++i) {
 			for (int j = 0; j < mjNGEOMTYPES; ++j) {
 				if (mjCOLLISIONFUNC[i][j] == collision_cb_wrapper) {
@@ -174,6 +172,7 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 			}
 		}
 	}
+	delete this;
 }
 
 bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
@@ -183,8 +182,6 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	m_                    = m;
 	instance_map[d.get()] = this;
 	if (instance_map.size() == 1) {
-		// default_passive_cb = mjcb_passive;
-		// mjcb_passive       = passive_cb_wrapper;
 		initCollisionFunction();
 	}
 	parseMujocoCustomFields(m.get());
@@ -194,7 +191,12 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 
 void MujocoContactSurfacesPlugin::update() {}
 
-void MujocoContactSurfacesPlugin::reset() {}
+void MujocoContactSurfacesPlugin::reset()
+{
+	geomCollisions.clear();
+	// contactProperties.clear();
+	// instance_map.erase(d_.get());
+}
 
 int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2,
                                               mjtNum margin)
@@ -401,10 +403,14 @@ void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr da
 
 void MujocoContactSurfacesPlugin::initCollisionFunction()
 {
+	// #define SP std::placeholders
+	// 	auto collision_function = std::bind(&MujocoContactSurfacesPlugin::collision_cb, this, SP::_1, SP::_2, SP::_3,
+	// SP::_4, SP::_5, SP::_6);
 	for (int i = 0; i < mjNGEOMTYPES; ++i) {
 		for (int j = 0; j < mjNGEOMTYPES; ++j) {
 			defaultCollisionFunctions[i][j] = mjCOLLISIONFUNC[i][j];
-			mjCOLLISIONFUNC[i][j]           = collision_cb_wrapper;
+			// registerCollisionFunc(i, j, collision_function);
+			registerCollisionFunc(i, j, collision_cb_wrapper);
 		}
 	}
 }
@@ -541,32 +547,42 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 						}
 						case mjGEOM_MESH: // mesh
 						{
-							// search for mesh .obj file
-							int filename_id = mj_name2id(m, mjOBJ_TEXT, full_name.c_str());
-							if (filename_id >= 0) {
-								int filename_adr = m->text_adr[filename_id];
-								if (filename_adr >= 0) {
-									int filename_size = m->text_size[filename_id];
-									std::string filename(&m->text_data[filename_adr], filename_size);
-									Mesh *mesh = new Mesh(filename, resolutionHint);
+							int geom_dataid = m->geom_dataid[id];
+							if (geom_dataid >= 0) {
+								int nv    = m->mesh_vertnum[geom_dataid];
+								int nf    = m->mesh_facenum[geom_dataid];
+								int v_adr = m->mesh_vertadr[geom_dataid];
+								int f_adr = m->mesh_faceadr[geom_dataid];
+								if (nv > 0 && nf > 0 && v_adr >= 0 && f_adr >= 0) {
+									std::vector<SurfaceTriangle> triangles;
+									std::vector<Vector3<double>> vertices;
+									for (int i = 0; i < nv; ++i) {
+										int v = v_adr + 3 * i;
+										vertices.push_back(
+										    Vector3<double>(m->mesh_vert[v], m->mesh_vert[v + 1], m->mesh_vert[v + 2]));
+									}
+									for (int i = 0; i < nf; ++i) {
+										int f = f_adr + 3 * i;
+										triangles.push_back(
+										    SurfaceTriangle(m->mesh_face[f], m->mesh_face[f + 1], m->mesh_face[f + 2]));
+									}
+									TriangleSurfaceMesh<double> *sm =
+									    new TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
 									if (hydroElasticModulus > 0) {
-										// soft mesh
 										ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
 										                      "soft mesh collision not implemented yet");
+										break;
 									} else {
-										TriangleSurfaceMesh<double> *sm = new TriangleSurfaceMesh<double>(
-										    ReadObjToTriangleSurfaceMesh(filename, resolutionHint));
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp                    = new ContactProperties(id, s, RIGID, mesh, sm, bvh);
+										cp                    = new ContactProperties(id, s, RIGID, NULL, sm, bvh);
 										contactProperties[id] = cp;
+										break;
 									}
-								} else {
-									ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces", "No .obj file defined for the mesh " << s);
 								}
-							} else {
-								ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces", "No .obj file defined for the mesh " << s);
-							}
+							}						
+							ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
+							                      "Could not load mesh! It was not properly defined in mujoco.");
 							break;
 						}
 					}
@@ -583,13 +599,13 @@ void MujocoContactSurfacesPlugin::updateContactSurfaceVisualization()
 		std::uniform_real_distribution<float> uni(0., 1.);
 		std::default_random_engine re;
 		for (GeomCollision *gc : geomCollisions) {
-			ContactSurface<double> *s = &gc->s;
-			const mjtNum size[3]      = { 0.0015, 0.0015, 0.0015 };
-			if (!s->is_triangle()) {
-				PolygonSurfaceMesh<double> m = s->poly_mesh_W();
+			ContactSurface<double> s = gc->s;
+			const mjtNum size[3]     = { 0.0015, 0.0015, 0.0015 };
+			if (!s.is_triangle()) {
+				PolygonSurfaceMesh<double> m = s.poly_mesh_W();
 				for (int f = 0; f < m.num_faces(); ++f) {
 					const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
-					const Vector3<double> &p_WQ = s->centroid(f);
+					const Vector3<double> &p_WQ = s.centroid(f);
 					const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
 					if (n_vGeom == MAX_VGEOM) {
 						break;

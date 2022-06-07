@@ -78,6 +78,10 @@ using namespace drake::multibody;
 using namespace drake::multibody::internal;
 using namespace MujocoSim;
 
+
+const int MAX_VGEOM = 10000;
+const std::string PREFIX = "cs::";
+
 typedef enum _contactType
 {
 	RIGID,
@@ -177,16 +181,13 @@ protected:
 
 private:
 	// Buffer of visual geoms
-	const int MAX_VGEOM = 10000;
 	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
 	int n_vGeom     = 0;
-
-	const std::string PREFIX = "cs::";
 
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kPolygon;
 	bool visualizeContactSurfaces                                         = false;
 
-	std::map<int, ContactProperties *> contactProperties{};
+	std::map<int, ContactProperties *> contactProperties;
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
 	std::vector<GeomCollision *> geomCollisions;
