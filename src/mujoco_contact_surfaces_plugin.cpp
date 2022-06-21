@@ -82,6 +82,7 @@
 
 namespace mujoco_contact_surfaces {
 
+namespace {
 // Map from data pointers to instances of the plugin. This instance is used in callback wrappers that are called from
 // mujoco in order to find the correct plugin instance to use.
 std::map<const mjData *, MujocoContactSurfacesPlugin *> instance_map;
@@ -156,6 +157,36 @@ double calcCombinedDissipation(ContactProperties *cp1, ContactProperties *cp2)
 		d_star += Estar / E_B * d_B;
 	return d_star;
 }
+
+Vector3<double> CalcCentroidOfEnclosedVolume(const TriangleSurfaceMesh<double> &surface_mesh)
+{
+	double six_total_volume = 0;
+	Vector3<double> centroid(0, 0, 0);
+
+	// For convenience we tetrahedralize each triangle (p,q,r) about the
+	// origin o = (0,0,0) in the mesh's frame. The centroid is then the
+	// signed volume weighted sum of the centroids of the tetrahedra. The
+	// choice of o is arbitrary and need not be on the interior of surface_mesh.
+	// For efficiency we compute 6*Vi for the signed volume Vi of the ith element
+	// and 6*V for the signed volume V of the region.
+	for (const auto &tri : surface_mesh.triangles()) {
+		const Vector3<double> &p = surface_mesh.vertex(tri.vertex(0));
+		const Vector3<double> &q = surface_mesh.vertex(tri.vertex(1));
+		const Vector3<double> &r = surface_mesh.vertex(tri.vertex(2));
+
+		// 6 * signed volume of (p,q,r,o)
+		const double six_volume = (p).cross(q).dot(r);
+		six_total_volume += six_volume;
+
+		// Centroid of tetrahedron (p,q,r,o) is (p + q + r + o) / 4.
+		// We factor out the division for added precision and accuracy.
+		centroid += six_volume * (p + q + r);
+	}
+
+	return centroid / (4 * six_total_volume);
+}
+
+} // namespace
 
 MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 {
@@ -283,7 +314,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			const double gM =
 			    s->HasGradE_M() ? s->EvaluateGradE_M_W(face).dot(nhat_W) : double(std::numeric_limits<double>::infinity());
 			const double gN = s->HasGradE_N() ? -s->EvaluateGradE_N_W(face).dot(nhat_W) :
-                                             double(std::numeric_limits<double>::infinity());
+			                                    double(std::numeric_limits<double>::infinity());
 
 			constexpr double kGradientEpsilon = 1.0e-14;
 			if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
@@ -314,7 +345,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			const Vector3<double> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
 			// Pressure at the quadrature point.
 			const double p0 = s->is_triangle() ? s->tri_e_MN().Evaluate(face, tri_centroid_barycentric) :
-                                              s->poly_e_MN().EvaluateCartesian(face, p_WQ);
+			                                     s->poly_e_MN().EvaluateCartesian(face, p_WQ);
 
 			// Force contribution by this quadrature point.
 			const double fn0 = Ae * p0;
@@ -569,18 +600,41 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 									TriangleSurfaceMesh<double> *sm =
 									    new TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
 									if (hydroElasticModulus > 0) {
-										ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
-										                      "soft mesh collision not implemented yet");
-										break;
+										std::vector<Vector3<double>> volume_mesh_vertices(sm->vertices().begin(),
+										                                                  sm->vertices().end());
+
+										const Vector3<double> centroid = CalcCentroidOfEnclosedVolume(*sm);
+										volume_mesh_vertices.push_back(centroid);
+
+										const int centroid_index = volume_mesh_vertices.size() - 1;
+
+										// The number of tetrahedra in the volume mesh is the same as the number of
+										// triangles in the surface mesh.
+										std::vector<VolumeElement> volume_mesh_elements;
+										volume_mesh_elements.reserve(sm->num_elements());
+										for (const SurfaceTriangle &e : sm->triangles()) {
+											// Orient the tetrahedron such that it has positive signed volume (assuming
+											// outward facing normal for the surface triangle).
+											volume_mesh_elements.push_back(
+											    { centroid_index, e.vertex(0), e.vertex(1), e.vertex(2) });
+										}
+
+										VolumeMesh<double> *vm = new VolumeMesh<double>(std::move(volume_mesh_elements),
+										                                                std::move(volume_mesh_vertices));
+										VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
+										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+										cp = new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
+										                           dissipation);
 									} else {
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp                    = new ContactProperties(id, s, RIGID, NULL, sm, bvh);
-										contactProperties[id] = cp;
-										break;
+										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh);
 									}
+									contactProperties[id] = cp;
+									break;
 								}
-							}						
+							}
 							ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
 							                      "Could not load mesh! It was not properly defined in mujoco.");
 							break;
