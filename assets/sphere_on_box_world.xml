@@ -38,7 +38,7 @@
     </body>
     <body name="body_sphere0" pos="0 0.0 0.3" >
       <freejoint/>
-      <geom name="sphere0" type="sphere" size="0.08 0.08 0.08" rgba="0.7 0.7 0.7 0.5"/>
+      <geom name="sphere0" type="sphere" size="0.08" rgba="0.7 0.7 0.7 0.5"/>
     </body>
   </worldbody>
 </mujoco>
