@@ -422,6 +422,29 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
 			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
+			// visualize collision force:
+			int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
+			// ContactProperties *cp =
+			//     contactProperties[g1]->contact_type == SOFT ? contactProperties[g1] : contactProperties[g2];
+			if (m->geom_type[id] == mjGEOM_BOX) {
+				// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "fn: " << fn);
+				const float rgba[4] = { std::min(fn, 1.), 0, std::max(1. - fn, 0.0), 0.8 };
+				mjtNum pos[3];
+				mjtNum size[3];
+				for (int i = 0; i < 3; ++i) {
+					pos[i]  = d->geom_xpos[3 * id + i];
+					size[i] = m->geom_size[3 * id + i];
+				}
+				mjtNum rot[9];
+				for (int i = 0; i < 9; ++i) {
+					rot[i] = d->geom_xmat[9 * id + i];
+				}
+				if (n_vGeom == MAX_VGEOM) {
+					break;
+				}
+				mjvGeom *g = vGeoms + n_vGeom++;
+				mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+			}
 		}
 	}
 	geomCollisions.clear();
@@ -661,9 +684,9 @@ void MujocoContactSurfacesPlugin::updateContactSurfaceVisualization()
 					const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
 					const Vector3<double> &p_WQ = s.centroid(f);
 					const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
-					if (n_vGeom == MAX_VGEOM) {
-						break;
-					}
+					// if (n_vGeom == MAX_VGEOM) {
+					break;
+					//}
 					mjvGeom *g = vGeoms + n_vGeom++;
 					mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
 					SurfacePolygon p    = m.element(f);
