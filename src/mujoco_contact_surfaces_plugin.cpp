@@ -357,7 +357,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			// Available at https://arxiv.org/abs/2110.04157.
 			const double k = Ae * g;
 
-			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation });
+			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation, face });
 		}
 	}
 }
@@ -365,6 +365,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
 	updateContactSurfaceVisualization();
+	const mjtNum size[3]                              = { 0.0015, 0.0015, 0.0015 };
 	const CoulombFriction<double> &geometryM_friction = CoulombFriction<double>{ 0.3, 0.3 }; // TODO paramter
 	const CoulombFriction<double> &geometryN_friction = CoulombFriction<double>{ 0.3, 0.3 };
 	const CoulombFriction<double> combined_friction =
@@ -373,8 +374,10 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 	const double stiction_tolerance = 1.0e-4;
 	const double relative_tolerance = 1.0e-2;
 	for (GeomCollision *gc : geomCollisions) {
-		int g1 = gc->g1;
-		int g2 = gc->g2;
+		int g1                          = gc->g1;
+		int g2                          = gc->g2;
+		PolygonSurfaceMesh<double> mesh = gc->s.poly_mesh_W();
+
 		for (PointCollision pc : gc->pointCollisions) {
 			const RigidTransform<double> &X_WA  = getGeomPose(g1, d);
 			const RigidTransform<double> &X_WB  = getGeomPose(g2, d);
@@ -422,6 +425,31 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
 			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
+			// visualize
+			int face = pc.face;
+			//std::cout << fn << std::endl;
+			double scale                = std::min(std::abs(fn), 3.) / 3.;
+			const float rgba[4]         = { scale, 0., 1. - scale, 0.8 };
+			const Vector3<double> &p_WQ = mesh.element_centroid(face);
+			const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
+			if (n_vGeom == MAX_VGEOM) {
+				break;
+			}
+			mjvGeom *g = vGeoms + n_vGeom++;
+			mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
+			SurfacePolygon p    = mesh.element(face);
+			Vector3<double> vp0 = mesh.vertex(p.vertex(p.num_vertices() - 1));
+			Vector3<double> n   = mesh.face_normal(face);
+			for (int v = 0; v < p.num_vertices(); ++v) {
+				Vector3<double> vp1 = mesh.vertex(p.vertex(v));
+				if (n_vGeom == MAX_VGEOM) {
+					break;
+				}
+				mjvGeom *g = vGeoms + n_vGeom++;
+				mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
+				mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+				vp0 = vp1;
+			}
 		}
 	}
 	geomCollisions.clear();
@@ -650,38 +678,38 @@ void MujocoContactSurfacesPlugin::updateContactSurfaceVisualization()
 {
 	if (visualizeContactSurfaces) {
 		n_vGeom = 0;
-		std::uniform_real_distribution<float> uni(0., 1.);
-		std::default_random_engine re;
-		for (GeomCollision *gc : geomCollisions) {
-			ContactSurface<double> s = gc->s;
-			const mjtNum size[3]     = { 0.0015, 0.0015, 0.0015 };
-			if (!s.is_triangle()) {
-				PolygonSurfaceMesh<double> m = s.poly_mesh_W();
-				for (int f = 0; f < m.num_faces(); ++f) {
-					const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
-					const Vector3<double> &p_WQ = s.centroid(f);
-					const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
-					if (n_vGeom == MAX_VGEOM) {
-						break;
-					}
-					mjvGeom *g = vGeoms + n_vGeom++;
-					mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
-					SurfacePolygon p    = m.element(f);
-					Vector3<double> vp0 = m.vertex(p.vertex(p.num_vertices() - 1));
-					Vector3<double> n   = m.face_normal(f);
-					for (int v = 0; v < p.num_vertices(); ++v) {
-						Vector3<double> vp1 = m.vertex(p.vertex(v));
-						if (n_vGeom == MAX_VGEOM) {
-							break;
-						}
-						mjvGeom *g = vGeoms + n_vGeom++;
-						mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
-						mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
-						vp0 = vp1;
-					}
-				}
-			}
-		}
+		// std::uniform_real_distribution<float> uni(0., 1.);
+		// std::default_random_engine re;
+		// for (GeomCollision *gc : geomCollisions) {
+		// 	ContactSurface<double> s = gc->s;
+		// 	const mjtNum size[3]     = { 0.0015, 0.0015, 0.0015 };
+		// 	if (!s.is_triangle()) {
+		// 		PolygonSurfaceMesh<double> m = s.poly_mesh_W();
+		// 		for (int f = 0; f < m.num_faces(); ++f) {
+		// 			const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
+		// 			const Vector3<double> &p_WQ = s.centroid(f);
+		// 			const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
+		// 			if (n_vGeom == MAX_VGEOM) {
+		// 				break;
+		// 			}
+		// 			mjvGeom *g = vGeoms + n_vGeom++;
+		// 			mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
+		// 			SurfacePolygon p    = m.element(f);
+		// 			Vector3<double> vp0 = m.vertex(p.vertex(p.num_vertices() - 1));
+		// 			Vector3<double> n   = m.face_normal(f);
+		// 			for (int v = 0; v < p.num_vertices(); ++v) {
+		// 				Vector3<double> vp1 = m.vertex(p.vertex(v));
+		// 				if (n_vGeom == MAX_VGEOM) {
+		// 					break;
+		// 				}
+		// 				mjvGeom *g = vGeoms + n_vGeom++;
+		// 				mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
+		// 				mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+		// 				vp0 = vp1;
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
 }
 

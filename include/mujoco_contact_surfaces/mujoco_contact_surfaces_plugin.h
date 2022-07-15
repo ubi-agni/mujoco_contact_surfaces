@@ -80,8 +80,7 @@ using namespace drake::multibody;
 using namespace drake::multibody::internal;
 using namespace MujocoSim;
 
-
-const int MAX_VGEOM = 10000;
+const int MAX_VGEOM      = 10000;
 const std::string PREFIX = "cs::";
 
 typedef enum _contactType
@@ -146,6 +145,7 @@ typedef struct PointCollision
 	double fn0;
 	double stiffness;
 	double damping;
+	int face;
 } PointCollision;
 
 typedef struct GeomCollision
