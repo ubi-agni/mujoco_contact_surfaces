@@ -80,8 +80,7 @@ using namespace drake::multibody;
 using namespace drake::multibody::internal;
 using namespace MujocoSim;
 
-
-const int MAX_VGEOM = 10000;
+const int MAX_VGEOM      = 10000;
 const std::string PREFIX = "cs::";
 
 typedef enum _contactType
@@ -157,6 +156,14 @@ typedef struct GeomCollision
 	GeomCollision(int g1, int g2, ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
 
+typedef struct TactileSensor
+{
+	int geomID;
+	std::string geomName;
+	std::vector<Vector3<double>> cellLocations;
+
+} TactileSensor;
+
 class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
 {
 public:
@@ -186,13 +193,17 @@ private:
 	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
 	int n_vGeom     = 0;
 
-	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kPolygon;
+	// TODO there seems to be a bug where this is not correctly parsed
+	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
 	bool visualizeContactSurfaces                                         = false;
 
 	std::map<int, ContactProperties *> contactProperties;
+	std::vector<GeomCollision *> geomCollisions;
+	std::vector<TactileSensor *> tactileSensors;
+
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
-	std::vector<GeomCollision *> geomCollisions;
+
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
 	void updateContactSurfaceVisualization();
 };

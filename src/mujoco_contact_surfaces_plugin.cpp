@@ -216,6 +216,22 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 		initCollisionFunction();
 	}
 	parseMujocoCustomFields(m.get());
+
+	// TODO: This should not be hardcoded. Add tactile sensor
+	int id = mj_name2id(m.get(), mjOBJ_GEOM, "myrmex_foam");
+	if (id >= 0) {
+		TactileSensor *ts = new TactileSensor();
+		ts->geomID        = id;
+		ts->geomName      = "myrmex_foam";
+		for (double x = -0.19; x < 0.2; x = x + 0.02) {
+			for (double y = -0.19; y < 0.2; y = y + 0.02) {
+				ts->cellLocations.push_back(Vector3<double>(x, y, 0));
+			}
+		}
+		// ts->cellLocations = { Vector3<double>(0, 0, 0) };
+		tactileSensors.push_back(ts);
+	}
+
 	ROS_INFO_NAMED("mujoco_contact_surfaces", "Loaded mujoco_contact_surfaces");
 	return true;
 }
@@ -239,7 +255,6 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 	if (cp1 == NULL or cp2 == NULL or (cp1->contact_type == RIGID and cp2->contact_type == RIGID)) {
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 	}
-	// ;
 
 	std::unique_ptr<ContactSurface<double>> s;
 	if (cp1->contact_type == SOFT and cp2->contact_type == SOFT) {
@@ -423,32 +438,204 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
 			// visualize collision force:
-			int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
-			// ContactProperties *cp =
-			//     contactProperties[g1]->contact_type == SOFT ? contactProperties[g1] : contactProperties[g2];
-			if (m->geom_type[id] == mjGEOM_BOX) {
-				// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "fn: " << fn);
-				const float rgba[4] = { std::min(fn, 1.), 0, std::max(1. - fn, 0.0), 0.8 };
-				mjtNum pos[3];
-				mjtNum size[3];
-				for (int i = 0; i < 3; ++i) {
-					pos[i]  = d->geom_xpos[3 * id + i];
-					size[i] = m->geom_size[3 * id + i];
+			// int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
+			// // ContactProperties *cp =
+			// //     contactProperties[g1]->contact_type == SOFT ? contactProperties[g1] : contactProperties[g2];
+			// if (m->geom_type[id] == mjGEOM_BOX) {
+			// 	// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "fn: " << fn);
+			// 	const float rgba[4] = { std::min(fn, 1.), 0, std::max(1. - fn, 0.0), 0.8 };
+			// 	mjtNum pos[3];
+			// 	mjtNum size[3];
+			// 	for (int i = 0; i < 3; ++i) {
+			// 		pos[i]  = d->geom_xpos[3 * id + i];
+			// 		size[i] = m->geom_size[3 * id + i];
+			// 	}
+			// 	mjtNum rot[9];
+			// 	for (int i = 0; i < 9; ++i) {
+			// 		rot[i] = d->geom_xmat[9 * id + i];
+			// 	}
+			// 	if (n_vGeom == MAX_VGEOM) {
+			// 		break;
+			// 	}
+			// 	mjvGeom *g = vGeoms + n_vGeom++;
+			// 	mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+			// }
+		}
+		// Tactile sensors
+		// First approach: Interate over sensor cells
+		// for (TactileSensor *ts : tactileSensors) {
+		// 	int id = ts->geomID;
+		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
+		// 		ContactSurface<double> s = gc->s;
+		// 		auto mesh                = s.tri_mesh_W();
+		// 		for (Vector3<double> p : ts->cellLocations) {
+		// 			for (int t = 0; t < mesh.num_elements(); ++t) {
+		// 				Vector3<double> b = mesh.CalcBarycentric(p, t).normalized();
+
+		// 				if (b.minCoeff() >= 0) {
+		// 					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b);
+		// 					const float rgba[4] = { 1, 0, 0, 0.8 };
+		// 					mjtNum pos[3];
+		// 					mjtNum size[3] = { 0.01, 0.01, 0.003 };
+		// 					for (int i = 0; i < 3; ++i) {
+		// 						pos[i] = d->geom_xpos[3 * id + i] + p[i];
+		// 					}
+		// 					mjtNum rot[9];
+		// 					for (int i = 0; i < 9; ++i) {
+		// 						rot[i] = d->geom_xmat[9 * id + i];
+		// 					}
+		// 					if (n_vGeom == MAX_VGEOM) {
+		// 						break;
+		// 					}
+		// 					mjvGeom *g = vGeoms + n_vGeom++;
+		// 					mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+
+		// second approach: iterate over vertices
+		// for (TactileSensor *ts : tactileSensors) {
+		// 	int id        = ts->geomID;
+		// 	double height = m->geom_size[3 * id + 2];
+		// 	double h2     = height * height;
+		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
+		// 		ContactSurface<double> s = gc->s;
+		// 		auto mesh                = s.tri_mesh_W();
+		// 		for (int t = 0; t < mesh.num_elements(); ++t) {
+		// 			auto tri                  = mesh.element(t);
+		// 			const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
+		// 			const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
+		// 			const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
+		// 			const Vector3<double> &c  = mesh.element_centroid(t);
+
+		// 			double d0 = (v0 - c).norm();
+		// 			double d1 = (v1 - c).norm();
+		// 			double d2 = (v2 - c).norm();
+
+		// 			double dist = std::max({ d0, d1, d2 });
+		// 			dist        = std::sqrt(dist * dist + h2);
+		// 			Eigen::Matrix<double, 3, 2> A;
+		// 			A.col(0) << v1 - v0;
+		// 			A.col(1) << v2 - v0;
+		// 			auto h = A.colPivHouseholderQr();
+
+		// 			for (Vector3<double> p0 : ts->cellLocations) {
+		// 				Vector3<double> p;
+		// 				for (int i = 0; i < 3; ++i) {
+		// 					p[i] = d->geom_xpos[3 * id + i] + p0[i];
+		// 				}
+		// 				if ((p - c).norm() <= dist) {
+		// 					Vector2<double> solution = h.solve(p - v0);
+		// 					const double &b1         = solution(0);
+		// 					const double &b2         = solution(1);
+		// 					const double b0          = 1. - b1 - b2;
+		// 					const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
+		// 					if (b.minCoeff() >= 0) {
+		// 						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b);
+		// 						const float rgba[4] = { 1, 0, 0, 0.8 };
+		// 						mjtNum pos[3]       = { p[0], p[1], p[2] };
+		// 						mjtNum size[3]      = { 0.01, 0.01, 0.003 };
+		// 						mjtNum rot[9];
+		// 						for (int i = 0; i < 9; ++i) {
+		// 							rot[i] = d->geom_xmat[9 * id + i];
+		// 						}
+		// 						if (n_vGeom < MAX_VGEOM) {
+		// 							mjvGeom *g = vGeoms + n_vGeom++;
+		// 							mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		// third approach: caching
+		for (TactileSensor *ts : tactileSensors) {
+			int id        = ts->geomID;
+			double height = m->geom_size[3 * id + 2];
+			double h2     = height * height;
+			if (g1 == ts->geomID or g2 == ts->geomID) {
+				ContactSurface<double> s = gc->s;
+				auto mesh                = s.tri_mesh_W();
+
+				// prepare caches
+				const int n = mesh.num_elements();
+				Eigen::MatrixX3d centroids(n, 3);
+				Eigen::VectorXd distance_thresholds(n);
+				std::map<int, Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 3, 2>>> cph_cache = {};
+				// Eigen::ColPivHouseholderQR<Eigen::MatrixX2d> cph_cache[n];
+				std::vector<Vector3<double>> v0s;
+				std::vector<Vector3<double>> v1s;
+				std::vector<Vector3<double>> v2s;
+
+				for (int t = 0; t < n; ++t) {
+					auto tri                  = mesh.element(t);
+					const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
+					const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
+					const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
+					const Vector3<double> &c  = mesh.element_centroid(t);
+					v0s.push_back(v0);
+					v1s.push_back(v1);
+					v2s.push_back(v2);
+					// TODO error here??????
+					centroids.col(t) << c.transpose();
+
+					double d0 = (v0 - c).norm();
+					double d1 = (v1 - c).norm();
+					double d2 = (v2 - c).norm();
+
+					double dist            = std::max({ d0, d1, d2 });
+					dist                   = std::sqrt(dist * dist + h2);
+					distance_thresholds[t] = dist;
 				}
-				mjtNum rot[9];
-				for (int i = 0; i < 9; ++i) {
-					rot[i] = d->geom_xmat[9 * id + i];
-				}
-				if (n_vGeom == MAX_VGEOM) {
-					break;
-				}
-				mjvGeom *g = vGeoms + n_vGeom++;
-				mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+
+				// for (Vector3<double> p0 : ts->cellLocations) {
+				// 	Vector3<double> p;
+				// 	for (int i = 0; i < 3; ++i) {
+				// 		p[i] = d->geom_xpos[3 * id + i] + p0[i];
+				// 	}
+				// 	const Eigen::VectorXd dists =
+				// 	    (centroids.rowwise() - p.transpose()).rowwise().norm() - distance_thresholds;
+				// 	for (int t = 0; t < n; ++t) {
+				// 		// if (dists[t] >= 0) {
+				// 		// 	if (cph_cache.count(t) == 0) {
+				// 		// 		Eigen::Matrix<double, 3, 2> A;
+				// 		// 		A.col(0) << v1s[t] - v0s[t];
+				// 		// 		A.col(1) << v2s[t] - v0s[t];
+				// 		// 		cph_cache[t] = A.colPivHouseholderQr();
+				// 		// 	}
+
+				// 		// 	Vector2<double> solution = cph_cache[t].solve(p - v0s[t]);
+				// 		// 	const double &b1         = solution(0);
+				// 		// 	const double &b2         = solution(1);
+				// 		// 	const double b0          = 1. - b1 - b2;
+				// 		// 	const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
+				// 		// 	if (b.minCoeff() >= 0) {
+				// 		// 		// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b);
+				// 		// 		const float rgba[4] = { 1, 0, 0, 0.8 };
+				// 		// 		mjtNum pos[3]       = { p[0], p[1], p[2] };
+				// 		// 		mjtNum size[3]      = { 0.01, 0.01, 0.003 };
+				// 		// 		mjtNum rot[9];
+				// 		// 		for (int i = 0; i < 9; ++i) {
+				// 		// 			rot[i] = d->geom_xmat[9 * id + i];
+				// 		// 		}
+				// 		// 		if (n_vGeom < MAX_VGEOM) {
+				// 		// 			mjvGeom *g = vGeoms + n_vGeom++;
+				// 		// 			mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+				// 		// 		}
+				// 		// 	}
+				// 		// }
+				// 	}
+				// }
 			}
 		}
 	}
+
 	geomCollisions.clear();
-}
+} // namespace mujoco_contact_surfaces
 
 void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
 {
@@ -458,8 +645,8 @@ void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr da
 void MujocoContactSurfacesPlugin::initCollisionFunction()
 {
 	// #define SP std::placeholders
-	// 	auto collision_function = std::bind(&MujocoContactSurfacesPlugin::collision_cb, this, SP::_1, SP::_2, SP::_3,
-	// SP::_4, SP::_5, SP::_6);
+	// 	auto collision_function = std::bind(&MujocoContactSurfacesPlugin::collision_cb, this, SP::_1, SP::_2,
+	// SP::_3, SP::_4, SP::_5, SP::_6);
 	for (int i = 0; i < mjNGEOMTYPES; ++i) {
 		for (int j = 0; j < mjNGEOMTYPES; ++j) {
 			defaultCollisionFunctions[i][j] = mjCOLLISIONFUNC[i][j];
