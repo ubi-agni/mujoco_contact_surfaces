@@ -55,6 +55,7 @@
 #include "drake/geometry/proximity/make_convex_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
@@ -194,7 +195,8 @@ private:
 	void initCollisionFunction();
 	std::vector<GeomCollision *> geomCollisions;
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
-	void updateContactSurfaceVisualization();
+	template <class T>
+	void visualizeMeshElement(int face, T mesh, double fn);
 };
 
 } // namespace mujoco_contact_surfaces
