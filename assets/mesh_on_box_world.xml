@@ -1,4 +1,4 @@
-<mujoco model="box_on_plane">
+<mujoco model="duck_on_box">
   <compiler meshdir="meshes"/>
   <statistic extent="1.5" meansize=".05"/>
   <option timestep="0.001" jacobian="sparse" gravity="0 0 -9.81"/>
@@ -22,11 +22,11 @@
     <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
     <text name="cs::HydroelasticContactRepresentation" data="kPolygon"/>
     <numeric name="cs::VisualizeSurfaces" data="1"/>
-    <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
+    <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint, staticFriction, dynamicFriction.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     For meshes the resolutionHint will be ignored. -->
-    <numeric name="cs::box" data="5e4 5.0 0.05"/>
-    <numeric name="cs::duck" data="0 1.0 0"/>
+    <numeric name="cs::duck" data="5e6 30.0 0.05 0.3 0.3"/>
+    <numeric name="cs::box" data="0 1.0 0.05 0.3 0.3"/>
   </custom>
 
   <worldbody>
@@ -39,7 +39,7 @@
     </body>
     <body name="body_duck" pos="0 0.0 0.5" >
       <freejoint/>
-      <geom name="duck" type="mesh" mesh="rubber_duck"/>
+      <geom name="duck" type="mesh" mesh="rubber_duck" rgba="0.7 0.7 0.0 0.5"/>
     </body> 
   </worldbody>
 </mujoco>

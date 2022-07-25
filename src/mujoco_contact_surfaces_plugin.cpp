@@ -372,24 +372,32 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			// Available at https://arxiv.org/abs/2110.04157.
 			const double k = Ae * g;
 
-			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation });
+			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation, face });
 		}
 	}
 }
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
-	updateContactSurfaceVisualization();
-	const CoulombFriction<double> &geometryM_friction = CoulombFriction<double>{ 0.3, 0.3 }; // TODO paramter
-	const CoulombFriction<double> &geometryN_friction = CoulombFriction<double>{ 0.3, 0.3 };
-	const CoulombFriction<double> combined_friction =
-	    CalcContactFrictionFromSurfaceProperties(geometryM_friction, geometryN_friction);
-	const double mu_coulomb         = combined_friction.dynamic_friction();
-	const double stiction_tolerance = 1.0e-4;
+	if (visualizeContactSurfaces) {
+		// reset the visualized geoms
+		n_vGeom = 0;
+	}
+
+	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
 	const double relative_tolerance = 1.0e-2;
 	for (GeomCollision *gc : geomCollisions) {
-		int g1 = gc->g1;
-		int g2 = gc->g2;
+		int g1                 = gc->g1;
+		int g2                 = gc->g2;
+		ContactProperties *cp1 = contactProperties[g1];
+		ContactProperties *cp2 = contactProperties[g2];
+		const CoulombFriction<double> &geometryM_friction =
+		    CoulombFriction<double>{ cp1->static_friction, cp1->dynamic_friction };
+		const CoulombFriction<double> &geometryN_friction =
+		    CoulombFriction<double>{ cp2->static_friction, cp2->dynamic_friction };
+		const CoulombFriction<double> combined_friction =
+		    CalcContactFrictionFromSurfaceProperties(geometryM_friction, geometryN_friction);
+		const double mu_coulomb = combined_friction.dynamic_friction();
 		for (PointCollision pc : gc->pointCollisions) {
 			const RigidTransform<double> &X_WA  = getGeomPose(g1, d);
 			const RigidTransform<double> &X_WB  = getGeomPose(g2, d);
@@ -437,6 +445,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
 			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
+
 			// visualize collision force:
 			int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
 			// ContactProperties *cp =
@@ -459,6 +468,14 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 				}
 				mjvGeom *g = vGeoms + n_vGeom++;
 				mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+			}
+			// visualize
+			if (visualizeContactSurfaces) {
+				if (gc->s.is_triangle()) {
+					visualizeMeshElement(pc.face, gc->s.tri_mesh_W(), fn);
+				} else {
+					visualizeMeshElement(pc.face, gc->s.poly_mesh_W(), fn);
+				}
 			}
 		}
 		// Tactile sensors
@@ -637,6 +654,35 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 	geomCollisions.clear();
 } // namespace mujoco_contact_surfaces
 
+template <class T>
+void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double fn)
+{
+	if (n_vGeom < MAX_VGEOM) {
+		const mjtNum size[3] = { 0.0015, 0.0015, 0.0015 };
+		// int face                    = pc.face;
+		float scale                 = std::min(std::abs(fn), 3.) / 3.;
+		const float rgba[4]         = { scale, 0., 1.0f - scale, 0.8 };
+		const Vector3<double> &p_WQ = mesh.element_centroid(face);
+		const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
+
+		mjvGeom *g = vGeoms + n_vGeom++;
+		mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
+		auto p              = mesh.element(face);
+		Vector3<double> vp0 = mesh.vertex(p.vertex(p.num_vertices() - 1));
+		Vector3<double> n   = mesh.face_normal(face);
+		for (int v = 0; v < p.num_vertices(); ++v) {
+			Vector3<double> vp1 = mesh.vertex(p.vertex(v));
+			if (n_vGeom == MAX_VGEOM) {
+				break;
+			}
+			mjvGeom *g = vGeoms + n_vGeom++;
+			mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
+			mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+			vp0 = vp1;
+		}
+	}
+}
+
 void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
 {
 	passive_cb(model.get(), data.get());
@@ -665,12 +711,16 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 		if (hcp_adr >= 0) {
 			int hcp_size = m->text_size[hcp_id];
 			std::string hcp(&m->text_data[hcp_adr], hcp_size);
-			if (hcp == "kTriangle") {
+			if (hcp.find("kTriangle") != std::string::npos) {
 				hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
-			} else if (hcp == "kPolygon") {
+				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Found HydroelasticContactRepresentation: kTriangle");
+			} else if (hcp.find("kPolygon") != std::string::npos) {
 				hydroelastic_contact_representation = HydroelasticContactRepresentation::kPolygon;
+				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Found HydroelasticContactRepresentation: kPolygon");
+			} else {
+				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+				                      "No HydroelasticContactRepresentation found. Using default: kPolygon");
 			}
-			ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Found HydroelasticContactRepresentation: " << hcp);
 		}
 	}
 	// parse VisualizeSurfaces
@@ -692,10 +742,12 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 			if (id >= 0) {
 				int adr  = m->numeric_adr[i];
 				int size = m->numeric_size[i];
-				if (adr >= 0 and size == 3) {
+				if (adr >= 0 and size == 5) {
 					double hydroElasticModulus = m->numeric_data[adr];
 					double dissipation         = m->numeric_data[adr + 1];
 					double resolutionHint      = m->numeric_data[adr + 2];
+					double staticFriction      = m->numeric_data[adr + 3];
+					double dynamicFriction     = m->numeric_data[adr + 4];
 					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
 					                      "Found geom '" << s << "' with properties: hM " << hydroElasticModulus << " dis "
 					                                     << dissipation << " rH " << resolutionHint);
@@ -707,7 +759,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							if (hydroElasticModulus > 0) {
 								ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "soft plane collision not implemented yet");
 							} else {
-								cp                    = new ContactProperties(id, s, RIGID);
+								cp                    = new ContactProperties(id, s, RIGID, staticFriction, dynamicFriction);
 								contactProperties[id] = cp;
 							}
 							break;
@@ -723,12 +775,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeSpherePressureField<double>(*sphere, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp = new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction);
 							}
 
 							contactProperties[id] = cp;
@@ -751,13 +804,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeCylinderPressureField<double>(*cylinder, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp =
-								    new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -776,12 +829,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeBoxPressureField<double>(*box, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp = new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp                                         = new ContactProperties(id, s, RIGID, box, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -835,11 +889,11 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
 										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 										cp = new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
-										                           dissipation);
+										                           dissipation, staticFriction, dynamicFriction);
 									} else {
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh);
+										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction);
 									}
 									contactProperties[id] = cp;
 									break;
@@ -849,45 +903,6 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							                      "Could not load mesh! It was not properly defined in mujoco.");
 							break;
 						}
-					}
-				}
-			}
-		}
-	}
-}
-
-void MujocoContactSurfacesPlugin::updateContactSurfaceVisualization()
-{
-	if (visualizeContactSurfaces) {
-		n_vGeom = 0;
-		std::uniform_real_distribution<float> uni(0., 1.);
-		std::default_random_engine re;
-		for (GeomCollision *gc : geomCollisions) {
-			ContactSurface<double> s = gc->s;
-			const mjtNum size[3]     = { 0.0015, 0.0015, 0.0015 };
-			if (!s.is_triangle()) {
-				PolygonSurfaceMesh<double> m = s.poly_mesh_W();
-				for (int f = 0; f < m.num_faces(); ++f) {
-					const float rgba[4]         = { uni(re), uni(re), uni(re), 0.8 };
-					const Vector3<double> &p_WQ = s.centroid(f);
-					const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
-					// if (n_vGeom == MAX_VGEOM) {
-					break;
-					//}
-					mjvGeom *g = vGeoms + n_vGeom++;
-					mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
-					SurfacePolygon p    = m.element(f);
-					Vector3<double> vp0 = m.vertex(p.vertex(p.num_vertices() - 1));
-					Vector3<double> n   = m.face_normal(f);
-					for (int v = 0; v < p.num_vertices(); ++v) {
-						Vector3<double> vp1 = m.vertex(p.vertex(v));
-						if (n_vGeom == MAX_VGEOM) {
-							break;
-						}
-						mjvGeom *g = vGeoms + n_vGeom++;
-						mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
-						mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
-						vp0 = vp1;
 					}
 				}
 			}
