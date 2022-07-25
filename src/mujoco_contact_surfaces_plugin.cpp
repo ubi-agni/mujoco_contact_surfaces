@@ -368,18 +368,21 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		// reset the visualized geoms
 		n_vGeom = 0;
 	}
-	const mjtNum size[3]                              = { 0.0015, 0.0015, 0.0015 };
-	const CoulombFriction<double> &geometryM_friction = CoulombFriction<double>{ 0.3, 0.3 }; // TODO paramter
-	const CoulombFriction<double> &geometryN_friction = CoulombFriction<double>{ 0.3, 0.3 };
-	const CoulombFriction<double> combined_friction =
-	    CalcContactFrictionFromSurfaceProperties(geometryM_friction, geometryN_friction);
-	const double mu_coulomb         = combined_friction.dynamic_friction();
-	const double stiction_tolerance = 1.0e-4;
+
+	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
 	const double relative_tolerance = 1.0e-2;
 	for (GeomCollision *gc : geomCollisions) {
-		int g1 = gc->g1;
-		int g2 = gc->g2;
-
+		int g1                 = gc->g1;
+		int g2                 = gc->g2;
+		ContactProperties *cp1 = contactProperties[g1];
+		ContactProperties *cp2 = contactProperties[g2];
+		const CoulombFriction<double> &geometryM_friction =
+		    CoulombFriction<double>{ cp1->static_friction, cp1->dynamic_friction };
+		const CoulombFriction<double> &geometryN_friction =
+		    CoulombFriction<double>{ cp2->static_friction, cp2->dynamic_friction };
+		const CoulombFriction<double> combined_friction =
+		    CalcContactFrictionFromSurfaceProperties(geometryM_friction, geometryN_friction);
+		const double mu_coulomb = combined_friction.dynamic_friction();
 		for (PointCollision pc : gc->pointCollisions) {
 			const RigidTransform<double> &X_WA  = getGeomPose(g1, d);
 			const RigidTransform<double> &X_WB  = getGeomPose(g2, d);
@@ -446,7 +449,7 @@ void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double 
 	if (n_vGeom < MAX_VGEOM) {
 		const mjtNum size[3] = { 0.0015, 0.0015, 0.0015 };
 		// int face                    = pc.face;
-		float scale                = std::min(std::abs(fn), 3.) / 3.;
+		float scale                 = std::min(std::abs(fn), 3.) / 3.;
 		const float rgba[4]         = { scale, 0., 1.0f - scale, 0.8 };
 		const Vector3<double> &p_WQ = mesh.element_centroid(face);
 		const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
@@ -528,10 +531,12 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 			if (id >= 0) {
 				int adr  = m->numeric_adr[i];
 				int size = m->numeric_size[i];
-				if (adr >= 0 and size == 3) {
+				if (adr >= 0 and size == 5) {
 					double hydroElasticModulus = m->numeric_data[adr];
 					double dissipation         = m->numeric_data[adr + 1];
 					double resolutionHint      = m->numeric_data[adr + 2];
+					double staticFriction      = m->numeric_data[adr + 3];
+					double dynamicFriction     = m->numeric_data[adr + 4];
 					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
 					                      "Found geom '" << s << "' with properties: hM " << hydroElasticModulus << " dis "
 					                                     << dissipation << " rH " << resolutionHint);
@@ -543,7 +548,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							if (hydroElasticModulus > 0) {
 								ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "soft plane collision not implemented yet");
 							} else {
-								cp                    = new ContactProperties(id, s, RIGID);
+								cp                    = new ContactProperties(id, s, RIGID, staticFriction, dynamicFriction);
 								contactProperties[id] = cp;
 							}
 							break;
@@ -559,12 +564,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeSpherePressureField<double>(*sphere, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp = new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction);
 							}
 
 							contactProperties[id] = cp;
@@ -587,13 +593,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeCylinderPressureField<double>(*cylinder, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp =
-								    new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -612,12 +618,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeBoxPressureField<double>(*box, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp = new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation);
+								cp = new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation,
+								                           staticFriction, dynamicFriction);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp                                         = new ContactProperties(id, s, RIGID, box, sm, bvh);
+								cp = new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -671,11 +678,11 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
 										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 										cp = new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
-										                           dissipation);
+										                           dissipation, staticFriction, dynamicFriction);
 									} else {
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh);
+										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction);
 									}
 									contactProperties[id] = cp;
 									break;
