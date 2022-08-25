@@ -38,6 +38,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <pluginlib/class_loader.h>
 
 #include <mujoco_ros/mujoco_sim.h>
@@ -80,6 +81,7 @@ using namespace drake::math;
 using namespace drake::multibody;
 using namespace drake::multibody::internal;
 using namespace MujocoSim;
+using namespace std::chrono;
 
 const int MAX_VGEOM      = 10000;
 const std::string PREFIX = "cs::";

@@ -11,6 +11,7 @@
   <rosparam file="$(find mujoco_contact_surfaces)/config/mujoco_contact_surfaces.yaml" subst_value="true" />
 
   <node pkg="mujoco_ros" type="mujoco_server" name="mujoco_server" output="screen" >
-    <param name="modelfile" type="str"  value="$(arg modelfile)" />
+      <param name="modelfile" type="str"  value="$(arg modelfile)" />
+      <param name="visualize"   value="true" />
   </node>
 </launch>
