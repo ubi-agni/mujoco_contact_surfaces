@@ -25,408 +25,408 @@
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
-    <numeric name="cs::box1" data="0 1.0 0.1"/>
-    <numeric name="cs::plate" data="0 1.0 0"/>
-    <numeric name="cs::myrmex_foam_0_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_0_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_1_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_2_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_3_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_4_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_5_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_6_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_7_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_8_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_9_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_10_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_11_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_12_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_13_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_14_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_15_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_16_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_17_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_18_19" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_0" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_1" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_2" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_3" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_4" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_5" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_6" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_7" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_8" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_9" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_10" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_11" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_12" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_13" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_14" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_15" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_16" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_17" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_18" data="5e4 5.0 0"/>
-<numeric name="cs::myrmex_foam_19_19" data="5e4 5.0 0"/>
+    <numeric name="cs::box1" data="0 1.0 0.1 0.3 0.3"/>
+    <numeric name="cs::plate" data="0 1.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_2" data="5e4 5.0 0 0.3 0.3 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_0_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_1_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_2_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_3_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_4_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_5_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_6_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_7_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_8_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_9_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_10_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_11_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_12_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_13_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_14_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_15_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_16_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_17_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_18_19" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_0" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_1" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_2" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_3" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_4" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_5" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_6" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_7" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_8" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_9" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_10" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_11" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_12" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_13" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_14" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_15" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_16" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_17" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_18" data="5e4 5.0 0 0.3 0.3"/>
+<numeric name="cs::myrmex_foam_19_19" data="5e4 5.0 0 0.3 0.3"/>
 
     
 
@@ -436,15 +436,15 @@
     <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
     <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"/>
     <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane" condim="1"/>
-    <body name="body_plate" pos="0 0 0.2" euler="180 0 0" >
+    <body name="body_plate" pos="0 0 0.3" euler="180 0 0" >
       <inertial pos="0 0 0.00915" mass="0.375" diaginertia="0.000860 0.000860 0.00171"/>
       <freejoint name="plate_joint"/>
       <geom name="plate" type="mesh" mesh="plate_8in_col" rgba="0.5 0.5 0.5 0.8"/>
     </body> 
-    <body name="body_box1" pos="1 0 0.5">
+    <!--body name="body_box1" pos="0 0 0.5">
       <freejoint/>
       <geom name="box1" type="box"  size="0.1 0.1 0.1" rgba="0.7 0.7 0.7 0.5"/>
-    </body>
+    </body-->
     <body name="body_myrmex" pos="0 0.0 0.0" >
       <freejoint/>
       <geom name="myrmex_base" type="box" pos="0 0 0.015" size="0.2 0.2 0.015" rgba="0.7 0.7 0.7 0.5"/>

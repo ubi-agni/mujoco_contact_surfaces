@@ -280,6 +280,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 
 void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc)
 {
+	auto time0                = high_resolution_clock::now();
 	ContactSurface<double> *s = &gc->s;
 	int g1                    = gc->g1;
 	int g2                    = gc->g2;
@@ -360,10 +361,14 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation, face });
 		}
 	}
+	auto time1 = high_resolution_clock::now();
+	// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "evaluateContactSurface: " << duration_cast<microseconds>(time1 -
+	// time0).count());
 }
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
+	auto time0 = high_resolution_clock::now();
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
 		n_vGeom = 0;
@@ -371,7 +376,16 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
 	const double relative_tolerance = 1.0e-2;
+	int loops                       = 0;
+	long d0                         = 0;
+	long d1                         = 0;
+	long d2                         = 0;
+	long d3                         = 0;
+	long d4                         = 0;
+	long d5                         = 0;
+	long d00                        = 0;
 	for (GeomCollision *gc : geomCollisions) {
+		auto t00               = high_resolution_clock::now();
 		int g1                 = gc->g1;
 		int g2                 = gc->g2;
 		ContactProperties *cp1 = contactProperties[g1];
@@ -383,12 +397,15 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		const CoulombFriction<double> combined_friction =
 		    CalcContactFrictionFromSurfaceProperties(geometryM_friction, geometryN_friction);
 		const double mu_coulomb = combined_friction.dynamic_friction();
+		auto t01                = high_resolution_clock::now();
+		d00 += duration_cast<nanoseconds>(t01 - t00).count();
 		for (PointCollision pc : gc->pointCollisions) {
+			auto t0                             = high_resolution_clock::now();
 			const RigidTransform<double> &X_WA  = getGeomPose(g1, d);
 			const RigidTransform<double> &X_WB  = getGeomPose(g2, d);
 			const SpatialVelocity<double> &V_WA = getGeomVelocity(g1, m, d);
 			const SpatialVelocity<double> &V_WB = getGeomVelocity(g2, m, d);
-
+			auto t1                             = high_resolution_clock::now();
 			const Vector3<double> p_AoAq_W      = pc.p - X_WA.translation();
 			const SpatialVelocity<double> V_WAq = V_WA.Shift(p_AoAq_W);
 
@@ -407,8 +424,10 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			// value indicates that bodies are approaching at Q.
 			const double vn_BqAq_W = v_BqAq_W.dot(pc.n);
 
-			const double fn = std::max(0., 1. - pc.damping * vn_BqAq_W) * (pc.fn0 - 0.001 * pc.stiffness * vn_BqAq_W);
+			auto t2 = high_resolution_clock::now();
 
+			const double fn = std::max(0., 1. - pc.damping * vn_BqAq_W) * (pc.fn0 - 0.001 * pc.stiffness * vn_BqAq_W);
+			auto t3         = high_resolution_clock::now();
 			const Vector3<double> vt   = v_BqAq_W - pc.n * vn_BqAq_W;
 			double epsilon             = stiction_tolerance * relative_tolerance;
 			epsilon                    = epsilon * epsilon;
@@ -419,7 +438,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			if (s < 1) {
 				mu_regularized = mu_coulomb * s * (2.0 - s);
 			}
-
+			auto t4                      = high_resolution_clock::now();
 			const Vector3<double> f_slip = -mu_regularized * that * fn;
 
 			const Vector3<double> f = f_slip + fn * pc.n;
@@ -428,8 +447,18 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			const mjtNum torque[3] = { 0, 0, 0 };
 			const mjtNum forceA[3] = { f[0], f[1], f[2] };
 			const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
+			auto t5                = high_resolution_clock::now();
 			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
 			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
+			auto t6 = high_resolution_clock::now();
+
+			loops++;
+			d0 += duration_cast<nanoseconds>(t1 - t0).count();
+			d1 += duration_cast<nanoseconds>(t2 - t1).count();
+			d2 += duration_cast<nanoseconds>(t3 - t2).count();
+			d3 += duration_cast<nanoseconds>(t4 - t3).count();
+			d4 += duration_cast<nanoseconds>(t5 - t4).count();
+			d5 += duration_cast<nanoseconds>(t6 - t5).count();
 			// visualize
 			if (visualizeContactSurfaces) {
 				if (gc->s.is_triangle()) {
@@ -440,7 +469,14 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			}
 		}
 	}
+	if (loops > 0) {
+		ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces", "passive_cb loops: " << d0 << " " << d1 << " " << d2 << " "
+		                                                                       << d3 << " " << d4 << " " << d5);
+	}
 	geomCollisions.clear();
+	auto time1 = high_resolution_clock::now();
+	ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces",
+	                       "passive_cb: " << duration_cast<microseconds>(time1 - time0).count());
 }
 
 template <class T>
@@ -631,31 +667,59 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 						}
 						case mjGEOM_MESH: // mesh
 						{
+							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+							                      "Total number of faces=" << m->nmeshface << " vertices=" << m->nmeshvert);
 							int geom_dataid = m->geom_dataid[id];
 							if (geom_dataid >= 0) {
 								int nv    = m->mesh_vertnum[geom_dataid];
 								int nf    = m->mesh_facenum[geom_dataid];
 								int v_adr = m->mesh_vertadr[geom_dataid];
 								int f_adr = m->mesh_faceadr[geom_dataid];
+								ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "f_adr=" << f_adr << " v_adr=" << v_adr);
 								if (nv > 0 && nf > 0 && v_adr >= 0 && f_adr >= 0) {
 									std::vector<SurfaceTriangle> triangles;
 									std::vector<Vector3<double>> vertices;
 									for (int i = 0; i < nv; ++i) {
-										int v = v_adr + 3 * i;
+										int v = 3*v_adr + 3 * i;
 										vertices.push_back(
 										    Vector3<double>(m->mesh_vert[v], m->mesh_vert[v + 1], m->mesh_vert[v + 2]));
 									}
+									int minface = 1000000;
+									int maxface = 0;
 									for (int i = 0; i < nf; ++i) {
-										int f = f_adr + 3 * i;
-										triangles.push_back(
-										    SurfaceTriangle(m->mesh_face[f], m->mesh_face[f + 1], m->mesh_face[f + 2]));
+										int f      = 3 * f_adr + 3 * i;
+										bool valid = true;
+										for (int h = 0; h < 3; ++h) {
+											minface = std::min(m->mesh_face[f+h], minface);
+											maxface = std::max(m->mesh_face[f+h], maxface);
+											// if (0 > (m->mesh_face[f + h]) - v_adr / 3 || (m->mesh_face[f + h]) - v_adr / 3 >= nv) {
+												
+											// 	// ROS_WARN_STREAM_NAMED("mujoco_contact_surfaces",
+											// 	//                       "Wrong vertex in triangle "
+											// 	//                           << i << ": " << (m->mesh_face[f + h]) - v_adr / 3);
+											// 	valid = false;
+											// }
+										}
+										if (valid) {
+											triangles.push_back(SurfaceTriangle(m->mesh_face[f],
+											                                    m->mesh_face[f + 1],
+											                                    m->mesh_face[f + 2]));
+										}
 									}
+									ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+									                      "Construct TriSM : minface=" << minface << " maxface=" << maxface);
+									ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+									                      "Construct TriSM : nf=" << nf << " nv=" << nv);
 									TriangleSurfaceMesh<double> *sm =
 									    new TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
+									ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+									                      "Actual TriSM : nf=" << sm->num_elements()
+									                                           << " nv=" << sm->num_vertices());
 									if (hydroElasticModulus > 0) {
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct VM");
 										std::vector<Vector3<double>> volume_mesh_vertices(sm->vertices().begin(),
 										                                                  sm->vertices().end());
-
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Calc VM center");
 										const Vector3<double> centroid = CalcCentroidOfEnclosedVolume(*sm);
 										volume_mesh_vertices.push_back(centroid);
 
@@ -663,6 +727,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 
 										// The number of tetrahedra in the volume mesh is the same as the number of
 										// triangles in the surface mesh.
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Assemble VM elements");
 										std::vector<VolumeElement> volume_mesh_elements;
 										volume_mesh_elements.reserve(sm->num_elements());
 										for (const SurfaceTriangle &e : sm->triangles()) {
@@ -671,17 +736,22 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 											volume_mesh_elements.push_back(
 											    { centroid_index, e.vertex(0), e.vertex(1), e.vertex(2) });
 										}
-
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct VM ");
 										VolumeMesh<double> *vm = new VolumeMesh<double>(std::move(volume_mesh_elements),
 										                                                std::move(volume_mesh_vertices));
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct VM field");
 										VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct VM BB");
 										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct props");
 										cp = new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
 										                           dissipation, staticFriction, dynamicFriction);
 									} else {
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct BB");
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+										ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Construct props");
 										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction);
 									}
 									contactProperties[id] = cp;

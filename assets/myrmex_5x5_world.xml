@@ -25,33 +25,33 @@
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
-    <numeric name="cs::box1" data="0 1.0 0.1"/>
-    <numeric name="cs::plate" data="0 1.0 0"/>
-    <numeric name="cs::myrmex_foam_0_0" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_0_1" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_0_2" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_0_3" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_0_4" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_1_0" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_1_1" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_1_2" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_1_3" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_1_4" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_2_0" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_2_1" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_2_2" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_2_3" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_2_4" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_3_0" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_3_1" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_3_2" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_3_3" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_3_4" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_4_0" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_4_1" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_4_2" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_4_3" data="5e4 5.0 0"/>
-    <numeric name="cs::myrmex_foam_4_4" data="5e4 5.0 0"/>
+    <numeric name="cs::box1" data="0 1.0 0.1 0.3 0.3"/>
+    <numeric name="cs::plate" data="0 1.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_0" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_1" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_2" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_3" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_0_4" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_1_0" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_1_1" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_1_2" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_1_3" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_1_4" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_2_0" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_2_1" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_2_2" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_2_3" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_2_4" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_3_0" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_3_1" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_3_2" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_3_3" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_3_4" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_4_0" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_4_1" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_4_2" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_4_3" data="5e4 5.0 0 0.3 0.3"/>
+    <numeric name="cs::myrmex_foam_4_4" data="5e4 5.0 0 0.3 0.3"/>
 
   </custom>
 
@@ -99,4 +99,8 @@
 
     </body>
   </worldbody>
+
+  <contact>
+    <exclude body1="body_plate" body2="body_myrmex"/>
+  <contact/>
 </mujoco>

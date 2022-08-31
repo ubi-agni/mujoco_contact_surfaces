@@ -38,6 +38,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <pluginlib/class_loader.h>
 
 #include <mujoco_ros/mujoco_sim.h>
@@ -73,6 +74,7 @@
 
 namespace mujoco_contact_surfaces {
 
+using namespace std::chrono;
 using namespace drake;
 using namespace drake::geometry;
 using namespace drake::geometry::internal;
