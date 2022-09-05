@@ -223,11 +223,12 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 		TactileSensor *ts = new TactileSensor();
 		ts->geomID        = id;
 		ts->geomName      = "myrmex_foam";
-		for (double x = -0.19; x < 0.2; x = x + 0.02) {
-			for (double y = -0.19; y < 0.2; y = y + 0.02) {
-				ts->cellLocations.push_back(Vector3<double>(x, y, 0));
-			}
-		}
+		ts->resolution    = 0.025;
+		// for (double x = -0.19; x < 0.2; x = x + 0.02) {
+		// 	for (double y = -0.19; y < 0.2; y = y + 0.02) {
+		// 		ts->cellLocations.push_back(Vector3<double>(x, y, 0));
+		// 	}
+		// }
 		// ts->cellLocations = { Vector3<double>(0, 0, 0) };
 		tactileSensors.push_back(ts);
 	}
@@ -382,6 +383,8 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
 		n_vGeom = 0;
+		running_scale = 0.9 * running_scale + 0.1 * current_scale;
+		current_scale = 0.;
 	}
 
 	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
@@ -471,6 +474,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			// }
 			// visualize
 			if (visualizeContactSurfaces) {
+				current_scale = std::max(current_scale, std::abs(fn));
 				if (gc->s.is_triangle()) {
 					visualizeMeshElement(pc.face, gc->s.tri_mesh_W(), fn);
 				} else {
@@ -570,6 +574,112 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		// }
 
 		// third approach: caching
+		// for (TactileSensor *ts : tactileSensors) {
+		// 	int id        = ts->geomID;
+		// 	double height = m->geom_size[3 * id + 2];
+		// 	double h2     = height * height;
+		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
+		// 		ContactSurface<double> s = gc->s;
+		// 		auto mesh                = s.tri_mesh_W();
+
+		// 		// prepare caches
+		// 		const int m = ts->cellLocations.size();
+		// 		const int n = mesh.num_elements();
+		// 		Eigen::MatrixX3d centroids(n, 3);
+		// 		Eigen::MatrixX3d cells(m, 3);
+		// 		Eigen::VectorXd distance_thresholds(n);
+		// 		std::map<int, Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 3, 2>>> cph_cache = {};
+		// 		std::vector<Vector3<double>> v0s;
+		// 		std::vector<Vector3<double>> v1s;
+		// 		std::vector<Vector3<double>> v2s;
+
+		// 		for (int i = 0; i < m; ++i) {
+		// 			Vector3<double> p0 = ts->cellLocations[i];
+		// 			Vector3<double> p;
+		// 			for (int j = 0; j < 3; ++j) {
+		// 				p[j] = d->geom_xpos[3 * id + j] + p0[j];
+		// 			}
+		// 			cells.row(i) << p.transpose();
+		// 		}
+
+		// 		auto time0 = high_resolution_clock::now();
+
+		// 		for (int t = 0; t < n; ++t) {
+		// 			auto tri                  = mesh.element(t);
+		// 			const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
+		// 			const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
+		// 			const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
+		// 			const Vector3<double> &c  = mesh.element_centroid(t);
+		// 			v0s.push_back(v0);
+		// 			v1s.push_back(v1);
+		// 			v2s.push_back(v2);
+		// 			centroids.row(t) << c.transpose();
+
+		// 			double d0 = (v0 - c).norm();
+		// 			double d1 = (v1 - c).norm();
+		// 			double d2 = (v2 - c).norm();
+
+		// 			double dist            = std::max({ d0, d1, d2 });
+		// 			dist                   = std::sqrt(dist * dist + h2);
+		// 			distance_thresholds[t] = dist;
+		// 		}
+		// 		auto time1 = high_resolution_clock::now();
+		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Caching time: " << duration_cast<microseconds>(time1 -
+		// time0).count()); 		Eigen::MatrixXd distances(n,m);
+		// 		//auto distances = centroids * cells.transpose();//
+		// 		distances = (((-2 * centroids * cells.transpose()).colwise() +
+		// centroids.transpose().colwise().squaredNorm().transpose()).rowwise() +
+		// cells.transpose().colwise().squaredNorm()).cwiseSqrt().colwise() - distance_thresholds;
+		// 		//distances = distances.colwise() - distance_thresholds;
+		// 		auto time1_ = high_resolution_clock::now();
+		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Distances: " << duration_cast<microseconds>(time1_ -
+		// time1).count());
+
+		// 		for (int l = 0; l < m; ++l) {
+		// 			Vector3<double> p = cells.row(l);
+		// 			auto time10 = high_resolution_clock::now();
+		// 			const Eigen::VectorXd dists = distances.col(l);
+		// 			auto time11 = high_resolution_clock::now();
+		// 			for (int t = 0; t < n; ++t) {
+		// 				if (dists[t] <= 0) {
+		// 					if (cph_cache.count(t) == 0) {
+		// 						Eigen::Matrix<double, 3, 2> A;
+		// 						A.col(0) << v1s[t] - v0s[t];
+		// 						A.col(1) << v2s[t] - v0s[t];
+		// 						cph_cache[t] = A.colPivHouseholderQr();
+		// 					}
+
+		// 					Vector2<double> solution = cph_cache[t].solve(p - v0s[t]);
+		// 					const double &b1         = solution(0);
+		// 					const double &b2         = solution(1);
+		// 					const double b0          = 1. - b1 - b2;
+		// 					const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
+		// 					if (b.minCoeff() >= 0) {
+		// 						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b.transpose());
+		// 						const float rgba[4] = { 1, 0, 0, 0.8 };
+		// 						mjtNum pos[3]       = { p[0], p[1], p[2] };
+		// 						mjtNum size[3]      = { 0.01, 0.01, 0.003 };
+		// 						mjtNum rot[9];
+		// 						for (int i = 0; i < 9; ++i) {
+		// 							rot[i] = d->geom_xmat[9 * id + i];
+		// 						}
+		// 						if (n_vGeom < MAX_VGEOM) {
+		// 							mjvGeom *g = vGeoms + n_vGeom++;
+		// 							mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 			auto time12 = high_resolution_clock::now();
+		// 			//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loop1: " << duration_cast<microseconds>(time11 -
+		// time10).count() << " " << duration_cast<microseconds>(time12 - time11).count());
+		// 		}
+		// 		auto time2 = high_resolution_clock::now();
+		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "TS time: " << duration_cast<microseconds>(time2 -
+		// time1_).count());
+		// 	}
+		// }
+
 		for (TactileSensor *ts : tactileSensors) {
 			int id        = ts->geomID;
 			double height = m->geom_size[3 * id + 2];
@@ -577,113 +687,129 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			if (g1 == ts->geomID or g2 == ts->geomID) {
 				ContactSurface<double> s = gc->s;
 				auto mesh                = s.tri_mesh_W();
+				double xs                = m->geom_size[3 * id];
+				double ys                = m->geom_size[3 * id + 1];
+				double zs                = m->geom_size[3 * id + 2];
+				double res               = ts->resolution;
+				int cx                   = (int)(2 * xs / res) + 1;
+				int cy                   = (int)(2 * ys / res) + 1;
+
+				std::vector<Eigen::Vector4d> cpoints[cx][cy];
+
+				mjtNum size[3] = { res / 2, res / 2, 0.001 };
+				mjtNum rot[9];
+				for (int i = 0; i < 9; ++i) {
+					rot[i] = d->geom_xmat[9 * id + i];
+				}
 
 				// prepare caches
-				const int m = ts->cellLocations.size();
 				const int n = mesh.num_elements();
-				Eigen::MatrixX3d centroids(n, 3);
-				Eigen::MatrixX3d cells(m, 3);
-				Eigen::VectorXd distance_thresholds(n);
-				std::map<int, Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 3, 2>>> cph_cache = {};
-				std::vector<Vector3<double>> v0s;
-				std::vector<Vector3<double>> v1s;
-				std::vector<Vector3<double>> v2s;
-				
-			
-				for (int i = 0; i < m; ++i) {
-					Vector3<double> p0 = ts->cellLocations[i];
-					Vector3<double> p;
-					for (int j = 0; j < 3; ++j) {
-						p[j] = d->geom_xpos[3 * id + j] + p0[j];
-					}
-					cells.row(i) << p.transpose();
-				}
-				
+				const int m = mesh.num_vertices();
 
-				auto time0 = high_resolution_clock::now();
+				// bool used_vertices[m];
+				// std::fill_n(used_vertices, m, false);
+
+				// get geom transformation
+				Eigen::Matrix4d M, Minv, Mback;
+				M << d->geom_xmat[9 * id + 0], d->geom_xmat[9 * id + 1], d->geom_xmat[9 * id + 2], d->geom_xpos[3 * id],
+				    d->geom_xmat[9 * id + 3], d->geom_xmat[9 * id + 4], d->geom_xmat[9 * id + 5], d->geom_xpos[3 * id + 1],
+				    d->geom_xmat[9 * id + 6], d->geom_xmat[9 * id + 7], d->geom_xmat[9 * id + 8], d->geom_xpos[3 * id + 2],
+				    0, 0, 0, 1;
+
+				Minv = M.inverse();
+				Minv.col(3) << Minv.col(3) + Eigen::Vector4d(xs, ys, -zs, 0);
+
+				Mback = Minv.inverse();
+				int tris[cx][cy];
+				Vector3<double> barys[cx][cy];
+				double dists[cx][cy];
+				for (int i = 0; i < cx; ++i) {
+					for (int j = 0; j < cy; ++j) {
+						dists[i][j] = res;
+					}
+				}
 
 				for (int t = 0; t < n; ++t) {
-					auto tri                  = mesh.element(t);
-					const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
-					const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
-					const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
-					const Vector3<double> &c  = mesh.element_centroid(t);
-					v0s.push_back(v0);
-					v1s.push_back(v1);
-					v2s.push_back(v2);
-					centroids.row(t) << c.transpose();
+					// tpoints.push_back(mesh.element_centroid(t));
+					// project points onto 2d sensor plane
+					std::vector<Eigen::Vector2d> tpoints = {};
+					auto element                         = mesh.element(t);
+					for (int i = 0; i < element.num_vertices(); ++i) {
+						int v                     = element.vertex(i);
+						const Vector3<double> &vp = mesh.vertex(v);
+						const Eigen::Vector4d vpe(vp[0], vp[1], vp[2], 1);
+						Eigen::Vector4d vpp = Minv * vpe;
 
-					double d0 = (v0 - c).norm();
-					double d1 = (v1 - c).norm();
-					double d2 = (v2 - c).norm();
-
-					double dist            = std::max({ d0, d1, d2 });
-					dist                   = std::sqrt(dist * dist + h2);
-					distance_thresholds[t] = dist;
-				}
-				auto time1 = high_resolution_clock::now();
-				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Caching time: " << duration_cast<microseconds>(time1 - time0).count());
-				Eigen::MatrixXd distances(n,m);
-				//auto distances = centroids * cells.transpose();//
-				distances = (((-2 * centroids * cells.transpose()).colwise() + centroids.transpose().colwise().squaredNorm().transpose()).rowwise() + cells.transpose().colwise().squaredNorm()).cwiseSqrt().colwise() - distance_thresholds;
-				//distances = distances.colwise() - distance_thresholds;
-				auto time1_ = high_resolution_clock::now();
-				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Distances: " << duration_cast<microseconds>(time1_ - time1).count());
-				
-				for (int l = 0; l < m; ++l) {
-					Vector3<double> p = cells.row(l);
-					auto time10 = high_resolution_clock::now();
-					const Eigen::VectorXd dists = distances.col(l);
-					auto time11 = high_resolution_clock::now();
-					for (int t = 0; t < n; ++t) {
-						if (dists[t] <= 0) {
-							if (cph_cache.count(t) == 0) {
-								Eigen::Matrix<double, 3, 2> A;
-								A.col(0) << v1s[t] - v0s[t];
-								A.col(1) << v2s[t] - v0s[t];
-								cph_cache[t] = A.colPivHouseholderQr();
-							}
-
-							Vector2<double> solution = cph_cache[t].solve(p - v0s[t]);
-							const double &b1         = solution(0);
-							const double &b2         = solution(1);
-							const double b0          = 1. - b1 - b2;
-							const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
-							if (b.minCoeff() >= 0) {
-								// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b.transpose());
-								const float rgba[4] = { 1, 0, 0, 0.8 };
-								mjtNum pos[3]       = { p[0], p[1], p[2] };
-								mjtNum size[3]      = { 0.01, 0.01, 0.003 };
-								mjtNum rot[9];
-								for (int i = 0; i < 9; ++i) {
-									rot[i] = d->geom_xmat[9 * id + i];
+						// if (!used_vertices[v]) {
+						// 	used_vertices[v] = true;
+						tpoints.push_back(Eigen::Vector2d(vpp[0], vpp[1]));
+						// }
+					}
+					int s0 = (int)((tpoints[1] - tpoints[0]).norm() / res * 2.) + 1;
+					int s1 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
+					int s2 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
+					int s  = std::max(s0, s1);
+					// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", s);
+					// s = s2 = 3;
+					for (double a = 0; a <= 1; a += 1. / s) {
+						for (double b = 0; b <= 1; b += 1. / s2) {
+							const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
+							// bary.normalize();
+							Eigen::Vector2d p = bary[0] * tpoints[0] + bary[1] * tpoints[1] + bary[2] * tpoints[2];
+							if (p[0] > 0 && p[0] < 2 * xs && p[1] > 0 && p[1] < 2 * ys) {
+								int x = (int)std::floor(p[0] / res);
+								int y = (int)std::floor(p[1] / res);
+								Eigen::Vector2d c(x * res + res / 2., y * res + res / 2.);
+								double dist = (c - p).norm();
+								if (dist < dists[x][y]) {
+									dists[x][y] = dist;
+									barys[x][y] = bary;
+									tris[x][y]  = t;
 								}
-								if (n_vGeom < MAX_VGEOM) {
-									mjvGeom *g = vGeoms + n_vGeom++;
-									mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-								}
+								// Eigen::Vector4d dp = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
+								// mjtNum pos[3]      = { dp[0], dp[1], dp[2] };
+								// if (n_vGeom < MAX_VGEOM) {
+								// 	mjvGeom *g = vGeoms + n_vGeom++;
+								// 	mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+								// }
 							}
 						}
 					}
-					auto time12 = high_resolution_clock::now();
-					//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loop1: " << duration_cast<microseconds>(time11 - time10).count() << " " << duration_cast<microseconds>(time12 - time11).count());
 				}
-				auto time2 = high_resolution_clock::now();				
-				ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "TS time: " << duration_cast<microseconds>(time2 - time1_).count());
+
+				for (int x = 0; x < cx; ++x) {
+					for (int y = 0; y < cy; ++y) {
+						if (dists[x][y] < res) {
+							int t               = tris[x][y];
+							double p0           = s.tri_e_MN().Evaluate(t, barys[x][y]) * s.area(t);
+							//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
+							float ps            = std::min(1., (float)p0 / 0.025);
+							const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
+							Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
+							mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
+							if (n_vGeom < MAX_VGEOM) {
+								mjvGeom *g = vGeoms + n_vGeom++;
+								mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
 	geomCollisions.clear();
-} // namespace mujoco_contact_surfaces
+}
+
+
 
 template <class T>
 void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double fn)
 {
 	if (n_vGeom < MAX_VGEOM) {
-		const mjtNum size[3] = { 0.0015, 0.0015, 0.0015 };
+		const mjtNum size[3] = { 0.00015, 0.00015, 0.00015 };
 		// int face                    = pc.face;
-		float scale                 = std::min(std::abs(fn), 3.) / 3.;
+		float scale                 = std::min(std::abs(fn), running_scale) / running_scale;
 		const float rgba[4]         = { scale, 0., 1.0f - scale, 0.8 };
 		const Vector3<double> &p_WQ = mesh.element_centroid(face);
 		const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
@@ -700,7 +826,7 @@ void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double 
 			}
 			mjvGeom *g = vGeoms + n_vGeom++;
 			mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
-			mjv_makeConnector(g, mjGEOM_CYLINDER, 0.001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+			mjv_makeConnector(g, mjGEOM_CYLINDER, 0.0001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
 			vp0 = vp1;
 		}
 	}
