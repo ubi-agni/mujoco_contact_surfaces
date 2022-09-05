@@ -174,7 +174,7 @@ typedef struct TactileSensor
 {
 	int geomID;
 	std::string geomName;
-	//std::vector<Vector3<double>> cellLocations;
+	// std::vector<Vector3<double>> cellLocations;
 	double resolution;
 
 } TactileSensor;
@@ -205,10 +205,12 @@ protected:
 
 private:
 	// Buffer of visual geoms
-	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
-	int n_vGeom     = 0;
-	double running_scale = 3.;
-	double current_scale = 0.;
+	mjvGeom *vGeoms              = new mjvGeom[MAX_VGEOM];
+	int n_vGeom                  = 0;
+	double running_scale         = 3.;
+	double current_scale         = 0.;
+	double tactile_running_scale = 3.;
+	double tactile_current_scale = 0.;
 
 	// TODO there seems to be a bug where this is not correctly parsed
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;

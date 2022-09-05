@@ -382,9 +382,11 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
-		n_vGeom = 0;
-		running_scale = 0.9 * running_scale + 0.1 * current_scale;
-		current_scale = 0.;
+		n_vGeom               = 0;
+		running_scale         = 0.9 * running_scale + 0.1 * current_scale;
+		current_scale         = 0.;
+		tactile_running_scale = 0.9 * tactile_running_scale + 0.1 * tactile_current_scale;
+		tactile_current_scale = 0.;
 	}
 
 	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
@@ -704,7 +706,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 				// prepare caches
 				const int n = mesh.num_elements();
-				const int m = mesh.num_vertices();
+				// const int m = mesh.num_vertices();
 
 				// bool used_vertices[m];
 				// std::fill_n(used_vertices, m, false);
@@ -720,15 +722,16 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 				Minv.col(3) << Minv.col(3) + Eigen::Vector4d(xs, ys, -zs, 0);
 
 				Mback = Minv.inverse();
-				int tris[cx][cy];
-				Vector3<double> barys[cx][cy];
-				double dists[cx][cy];
-				for (int i = 0; i < cx; ++i) {
-					for (int j = 0; j < cy; ++j) {
-						dists[i][j] = res;
-					}
-				}
-
+				// int tris[cx][cy];
+				// Vector3<double> barys[cx][cy];
+				// double dists[cx][cy];
+				// for (int i = 0; i < cx; ++i) {
+				// 	for (int j = 0; j < cy; ++j) {
+				// 		dists[i][j] = res;
+				// 	}
+				// }
+				std::vector<int> tris[cx][cy];
+				std::vector<Vector3<double>> barys[cx][cy];
 				for (int t = 0; t < n; ++t) {
 					// tpoints.push_back(mesh.element_centroid(t));
 					// project points onto 2d sensor plane
@@ -759,13 +762,15 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 							if (p[0] > 0 && p[0] < 2 * xs && p[1] > 0 && p[1] < 2 * ys) {
 								int x = (int)std::floor(p[0] / res);
 								int y = (int)std::floor(p[1] / res);
-								Eigen::Vector2d c(x * res + res / 2., y * res + res / 2.);
-								double dist = (c - p).norm();
-								if (dist < dists[x][y]) {
-									dists[x][y] = dist;
-									barys[x][y] = bary;
-									tris[x][y]  = t;
-								}
+								barys[x][y].push_back(bary);
+								tris[x][y].push_back(t);
+								// Eigen::Vector2d c(x * res + res / 2., y * res + res / 2.);
+								// double dist = (c - p).norm();
+								// if (dist < dists[x][y]) {
+								// 	dists[x][y] = dist;
+								// 	barys[x][y] = bary;
+								// 	tris[x][y]  = t;
+								// }
 								// Eigen::Vector4d dp = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
 								// mjtNum pos[3]      = { dp[0], dp[1], dp[2] };
 								// if (n_vGeom < MAX_VGEOM) {
@@ -779,11 +784,33 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 				for (int x = 0; x < cx; ++x) {
 					for (int y = 0; y < cy; ++y) {
-						if (dists[x][y] < res) {
-							int t               = tris[x][y];
-							double p0           = s.tri_e_MN().Evaluate(t, barys[x][y]) * s.area(t);
-							//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
-							float ps            = std::min(1., (float)p0 / 0.025);
+						// if (dists[x][y] < res) {
+						// 	int t               = tris[x][y];
+						// 	double p0           = s.tri_e_MN().Evaluate(t, barys[x][y]) * s.area(t);
+						// 	//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
+						// 	float ps            = std::min(1., (float)p0 / 0.025);
+						// 	const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
+						// 	Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
+						// 	mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
+						// 	if (n_vGeom < MAX_VGEOM) {
+						// 		mjvGeom *g = vGeoms + n_vGeom++;
+						// 		mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+						// 	}
+						// }
+						int nt = tris[x][y].size();
+						if (nt > 0) {
+							double mp = 0;
+
+							for (int i = 0; i < nt; ++i) {
+								int t = tris[x][y][i];
+								mp += s.tri_e_MN().Evaluate(t, barys[x][y][i]) * s.area(t);
+							}
+
+							double p0 = mp / nt;
+							// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
+							tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
+							float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
+
 							const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
 							Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
 							mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
@@ -800,8 +827,6 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 	geomCollisions.clear();
 }
-
-
 
 template <class T>
 void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double fn)
