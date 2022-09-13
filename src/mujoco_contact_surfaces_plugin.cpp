@@ -235,7 +235,6 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 
 void MujocoContactSurfacesPlugin::parseROSParam()
 {
-	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", rosparam_config_["TactileArrays"].getType());
 	if (rosparam_config_.hasMember("TactileArrays") &&
 	    rosparam_config_["TactileArrays"].getType() == XmlRpc::XmlRpcValue::TypeArray) {
 		auto tactile_arrays = rosparam_config_["TactileArrays"];
@@ -255,7 +254,6 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 
 				int id = mj_name2id(m_.get(), mjOBJ_GEOM, geomName.c_str());
 				if (id >= 0) {
-					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Adding new tactile sensor");
 					TactileSensor *ts = new TactileSensor();
 					ts->geomID        = id;
 					ts->geomName      = geomName;
@@ -266,6 +264,24 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 					ts->topicName     = topicName;
 					ts->publisher     = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1);
 					ts->lastUpdate    = 0;
+					double xs         = m_->geom_size[3 * id];
+					double ys         = m_->geom_size[3 * id + 1];
+					ts->cx            = (int)(2 * xs / resolution) ;
+					ts->cy            = (int)(2 * ys / resolution) ;
+					ts->vGeoms        = new mjvGeom[ts->cx * ts->cy];
+					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
+					                      "Found tactile sensor: " << sensorName << " " << ts->cx << "x" << ts->cy);
+					sensor_msgs::ChannelFloat32 channel;
+					channel.values.resize(ts->cx * ts->cy);
+					channel.name = sensorName;
+					ts->tactile_state_msg_.sensors.push_back(channel);
+					// ts->values = new double *[ts->cx];
+					// for (int x = 0; x < ts->cx; ++x) {
+					// 	ts->values[x] = new double[ts->cy];
+					// 	for (int y = 0; y < ts->cy; ++y) {
+					// 		ts->values[x][y] = 0;
+					// 	}
+					// }
 					tactileSensors.push_back(ts);
 				}
 			}
@@ -520,345 +536,113 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 				}
 			}
 		}
-		// Tactile sensors
-		// First approach: Interate over sensor cells
-		// for (TactileSensor *ts : tactileSensors) {
-		// 	int id = ts->geomID;
-		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
-		// 		ContactSurface<double> s = gc->s;
-		// 		auto mesh                = s.tri_mesh_W();
-		// 		for (Vector3<double> p : ts->cellLocations) {
-		// 			for (int t = 0; t < mesh.num_elements(); ++t) {
-		// 				Vector3<double> b = mesh.CalcBarycentric(p, t).normalized();
+	}
+	for (TactileSensor *ts : tactileSensors) {
+		if (d_->time - ts->lastUpdate > ts->updatePeriod) {
+			ts->n_vGeom    = 0;
+			ts->lastUpdate = d_->time;
+			int id         = ts->geomID;
+			int cx         = ts->cx;
+			int cy         = ts->cy;
+			double xs      = m->geom_size[3 * id];
+			double ys      = m->geom_size[3 * id + 1];
+			double zs      = m->geom_size[3 * id + 2];
+			double res     = ts->resolution;
 
-		// 				if (b.minCoeff() >= 0) {
-		// 					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b);
-		// 					const float rgba[4] = { 1, 0, 0, 0.8 };
-		// 					mjtNum pos[3];
-		// 					mjtNum size[3] = { 0.01, 0.01, 0.003 };
-		// 					for (int i = 0; i < 3; ++i) {
-		// 						pos[i] = d->geom_xpos[3 * id + i] + p[i];
-		// 					}
-		// 					mjtNum rot[9];
-		// 					for (int i = 0; i < 9; ++i) {
-		// 						rot[i] = d->geom_xmat[9 * id + i];
-		// 					}
-		// 					if (n_vGeom == MAX_VGEOM) {
-		// 						break;
-		// 					}
-		// 					mjvGeom *g = vGeoms + n_vGeom++;
-		// 					mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-		// 					break;
-		// 				}
-		// 			}
-		// 		}
-		// 	}
+			Eigen::Matrix4d M, Minv, Mback;
+			M << d->geom_xmat[9 * id + 0], d->geom_xmat[9 * id + 1], d->geom_xmat[9 * id + 2], d->geom_xpos[3 * id],
+			    d->geom_xmat[9 * id + 3], d->geom_xmat[9 * id + 4], d->geom_xmat[9 * id + 5], d->geom_xpos[3 * id + 1],
+			    d->geom_xmat[9 * id + 6], d->geom_xmat[9 * id + 7], d->geom_xmat[9 * id + 8], d->geom_xpos[3 * id + 2], 0,
+			    0, 0, 1;
 
-		// second approach: iterate over vertices
-		// for (TactileSensor *ts : tactileSensors) {
-		// 	int id        = ts->geomID;
-		// 	double height = m->geom_size[3 * id + 2];
-		// 	double h2     = height * height;
-		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
-		// 		ContactSurface<double> s = gc->s;
-		// 		auto mesh                = s.tri_mesh_W();
-		// 		for (int t = 0; t < mesh.num_elements(); ++t) {
-		// 			auto tri                  = mesh.element(t);
-		// 			const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
-		// 			const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
-		// 			const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
-		// 			const Vector3<double> &c  = mesh.element_centroid(t);
+			Minv = M.inverse();
+			Minv.col(3) << Minv.col(3) + Eigen::Vector4d(xs, ys, -zs, 0);
 
-		// 			double d0 = (v0 - c).norm();
-		// 			double d1 = (v1 - c).norm();
-		// 			double d2 = (v2 - c).norm();
+			Mback = Minv.inverse();
+			std::vector<double> pressure[cx][cy];
 
-		// 			double dist = std::max({ d0, d1, d2 });
-		// 			dist        = std::sqrt(dist * dist + h2);
-		// 			Eigen::Matrix<double, 3, 2> A;
-		// 			A.col(0) << v1 - v0;
-		// 			A.col(1) << v2 - v0;
-		// 			auto h = A.colPivHouseholderQr();
+			mjtNum size[3] = { res / 2, res / 2, 0.001 };
+			mjtNum rot[9];
+			for (int i = 0; i < 9; ++i) {
+				rot[i] = d->geom_xmat[9 * id + i];
+			}
 
-		// 			for (Vector3<double> p0 : ts->cellLocations) {
-		// 				Vector3<double> p;
-		// 				for (int i = 0; i < 3; ++i) {
-		// 					p[i] = d->geom_xpos[3 * id + i] + p0[i];
-		// 				}
-		// 				if ((p - c).norm() <= dist) {
-		// 					Vector2<double> solution = h.solve(p - v0);
-		// 					const double &b1         = solution(0);
-		// 					const double &b2         = solution(1);
-		// 					const double b0          = 1. - b1 - b2;
-		// 					const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
-		// 					if (b.minCoeff() >= 0) {
-		// 						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b);
-		// 						const float rgba[4] = { 1, 0, 0, 0.8 };
-		// 						mjtNum pos[3]       = { p[0], p[1], p[2] };
-		// 						mjtNum size[3]      = { 0.01, 0.01, 0.003 };
-		// 						mjtNum rot[9];
-		// 						for (int i = 0; i < 9; ++i) {
-		// 							rot[i] = d->geom_xmat[9 * id + i];
-		// 						}
-		// 						if (n_vGeom < MAX_VGEOM) {
-		// 							mjvGeom *g = vGeoms + n_vGeom++;
-		// 							mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-		// 						}
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
+			for (GeomCollision *gc : geomCollisions) {
+				if (gc->g1 == id or gc->g2 == id) {
+					ContactSurface<double> s = gc->s;
+					auto mesh                = s.tri_mesh_W();
 
-		// third approach: caching
-		// for (TactileSensor *ts : tactileSensors) {
-		// 	int id        = ts->geomID;
-		// 	double height = m->geom_size[3 * id + 2];
-		// 	double h2     = height * height;
-		// 	if (g1 == ts->geomID or g2 == ts->geomID) {
-		// 		ContactSurface<double> s = gc->s;
-		// 		auto mesh                = s.tri_mesh_W();
+					// prepare caches
+					const int n = mesh.num_elements();
 
-		// 		// prepare caches
-		// 		const int m = ts->cellLocations.size();
-		// 		const int n = mesh.num_elements();
-		// 		Eigen::MatrixX3d centroids(n, 3);
-		// 		Eigen::MatrixX3d cells(m, 3);
-		// 		Eigen::VectorXd distance_thresholds(n);
-		// 		std::map<int, Eigen::ColPivHouseholderQR<Eigen::Matrix<double, 3, 2>>> cph_cache = {};
-		// 		std::vector<Vector3<double>> v0s;
-		// 		std::vector<Vector3<double>> v1s;
-		// 		std::vector<Vector3<double>> v2s;
+					// get geom transformation
+					// std::vector<int> tris[cx][cy];
+					// std::vector<Vector3<double>> barys[cx][cy];
+					for (int t = 0; t < n; ++t) {
+						// project points onto 2d sensor plane
+						std::vector<Eigen::Vector2d> tpoints = {};
+						auto element                         = mesh.element(t);
+						for (int i = 0; i < element.num_vertices(); ++i) {
+							int v                     = element.vertex(i);
+							const Vector3<double> &vp = mesh.vertex(v);
+							const Eigen::Vector4d vpe(vp[0], vp[1], vp[2], 1);
+							Eigen::Vector4d vpp = Minv * vpe;
 
-		// 		for (int i = 0; i < m; ++i) {
-		// 			Vector3<double> p0 = ts->cellLocations[i];
-		// 			Vector3<double> p;
-		// 			for (int j = 0; j < 3; ++j) {
-		// 				p[j] = d->geom_xpos[3 * id + j] + p0[j];
-		// 			}
-		// 			cells.row(i) << p.transpose();
-		// 		}
-
-		// 		auto time0 = high_resolution_clock::now();
-
-		// 		for (int t = 0; t < n; ++t) {
-		// 			auto tri                  = mesh.element(t);
-		// 			const Vector3<double> &v0 = mesh.vertex(tri.vertex(0));
-		// 			const Vector3<double> &v1 = mesh.vertex(tri.vertex(1));
-		// 			const Vector3<double> &v2 = mesh.vertex(tri.vertex(2));
-		// 			const Vector3<double> &c  = mesh.element_centroid(t);
-		// 			v0s.push_back(v0);
-		// 			v1s.push_back(v1);
-		// 			v2s.push_back(v2);
-		// 			centroids.row(t) << c.transpose();
-
-		// 			double d0 = (v0 - c).norm();
-		// 			double d1 = (v1 - c).norm();
-		// 			double d2 = (v2 - c).norm();
-
-		// 			double dist            = std::max({ d0, d1, d2 });
-		// 			dist                   = std::sqrt(dist * dist + h2);
-		// 			distance_thresholds[t] = dist;
-		// 		}
-		// 		auto time1 = high_resolution_clock::now();
-		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Caching time: " << duration_cast<microseconds>(time1 -
-		// time0).count()); 		Eigen::MatrixXd distances(n,m);
-		// 		//auto distances = centroids * cells.transpose();//
-		// 		distances = (((-2 * centroids * cells.transpose()).colwise() +
-		// centroids.transpose().colwise().squaredNorm().transpose()).rowwise() +
-		// cells.transpose().colwise().squaredNorm()).cwiseSqrt().colwise() - distance_thresholds;
-		// 		//distances = distances.colwise() - distance_thresholds;
-		// 		auto time1_ = high_resolution_clock::now();
-		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Distances: " << duration_cast<microseconds>(time1_ -
-		// time1).count());
-
-		// 		for (int l = 0; l < m; ++l) {
-		// 			Vector3<double> p = cells.row(l);
-		// 			auto time10 = high_resolution_clock::now();
-		// 			const Eigen::VectorXd dists = distances.col(l);
-		// 			auto time11 = high_resolution_clock::now();
-		// 			for (int t = 0; t < n; ++t) {
-		// 				if (dists[t] <= 0) {
-		// 					if (cph_cache.count(t) == 0) {
-		// 						Eigen::Matrix<double, 3, 2> A;
-		// 						A.col(0) << v1s[t] - v0s[t];
-		// 						A.col(1) << v2s[t] - v0s[t];
-		// 						cph_cache[t] = A.colPivHouseholderQr();
-		// 					}
-
-		// 					Vector2<double> solution = cph_cache[t].solve(p - v0s[t]);
-		// 					const double &b1         = solution(0);
-		// 					const double &b2         = solution(1);
-		// 					const double b0          = 1. - b1 - b2;
-		// 					const Vector3<double> b  = Vector3<double>(b0, b1, b2).normalized();
-		// 					if (b.minCoeff() >= 0) {
-		// 						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Bary: " << b.transpose());
-		// 						const float rgba[4] = { 1, 0, 0, 0.8 };
-		// 						mjtNum pos[3]       = { p[0], p[1], p[2] };
-		// 						mjtNum size[3]      = { 0.01, 0.01, 0.003 };
-		// 						mjtNum rot[9];
-		// 						for (int i = 0; i < 9; ++i) {
-		// 							rot[i] = d->geom_xmat[9 * id + i];
-		// 						}
-		// 						if (n_vGeom < MAX_VGEOM) {
-		// 							mjvGeom *g = vGeoms + n_vGeom++;
-		// 							mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-		// 						}
-		// 					}
-		// 				}
-		// 			}
-		// 			auto time12 = high_resolution_clock::now();
-		// 			//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loop1: " << duration_cast<microseconds>(time11 -
-		// time10).count() << " " << duration_cast<microseconds>(time12 - time11).count());
-		// 		}
-		// 		auto time2 = high_resolution_clock::now();
-		// 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "TS time: " << duration_cast<microseconds>(time2 -
-		// time1_).count());
-		// 	}
-		// }
-
-		for (TactileSensor *ts : tactileSensors) {
-			tactile_msgs::TactileState tactile_state_msg;
-			int id        = ts->geomID;
-			double height = m->geom_size[3 * id + 2];
-			double h2     = height * height;
-			if ((g1 == ts->geomID or g2 == ts->geomID) && d_->time - ts->lastUpdate > ts->updatePeriod) {
-				ts->lastUpdate           = d_->time;
-				ContactSurface<double> s = gc->s;
-				auto mesh                = s.tri_mesh_W();
-				double xs                = m->geom_size[3 * id];
-				double ys                = m->geom_size[3 * id + 1];
-				double zs                = m->geom_size[3 * id + 2];
-				double res               = ts->resolution;
-				int cx                   = (int)(2 * xs / res) + 1;
-				int cy                   = (int)(2 * ys / res) + 1;
-
-				std::vector<Eigen::Vector4d> cpoints[cx][cy];
-
-				mjtNum size[3] = { res / 2, res / 2, 0.001 };
-				mjtNum rot[9];
-				for (int i = 0; i < 9; ++i) {
-					rot[i] = d->geom_xmat[9 * id + i];
-				}
-
-				// prepare caches
-				const int n = mesh.num_elements();
-				// const int m = mesh.num_vertices();
-
-				// bool used_vertices[m];
-				// std::fill_n(used_vertices, m, false);
-
-				// get geom transformation
-				Eigen::Matrix4d M, Minv, Mback;
-				M << d->geom_xmat[9 * id + 0], d->geom_xmat[9 * id + 1], d->geom_xmat[9 * id + 2], d->geom_xpos[3 * id],
-				    d->geom_xmat[9 * id + 3], d->geom_xmat[9 * id + 4], d->geom_xmat[9 * id + 5], d->geom_xpos[3 * id + 1],
-				    d->geom_xmat[9 * id + 6], d->geom_xmat[9 * id + 7], d->geom_xmat[9 * id + 8], d->geom_xpos[3 * id + 2],
-				    0, 0, 0, 1;
-
-				Minv = M.inverse();
-				Minv.col(3) << Minv.col(3) + Eigen::Vector4d(xs, ys, -zs, 0);
-
-				Mback = Minv.inverse();
-				// int tris[cx][cy];
-				// Vector3<double> barys[cx][cy];
-				// double dists[cx][cy];
-				// for (int i = 0; i < cx; ++i) {
-				// 	for (int j = 0; j < cy; ++j) {
-				// 		dists[i][j] = res;
-				// 	}
-				// }
-				std::vector<int> tris[cx][cy];
-				std::vector<Vector3<double>> barys[cx][cy];
-				for (int t = 0; t < n; ++t) {
-					// tpoints.push_back(mesh.element_centroid(t));
-					// project points onto 2d sensor plane
-					std::vector<Eigen::Vector2d> tpoints = {};
-					auto element                         = mesh.element(t);
-					for (int i = 0; i < element.num_vertices(); ++i) {
-						int v                     = element.vertex(i);
-						const Vector3<double> &vp = mesh.vertex(v);
-						const Eigen::Vector4d vpe(vp[0], vp[1], vp[2], 1);
-						Eigen::Vector4d vpp = Minv * vpe;
-
-						// if (!used_vertices[v]) {
-						// 	used_vertices[v] = true;
-						tpoints.push_back(Eigen::Vector2d(vpp[0], vpp[1]));
-						// }
-					}
-					int s0 = (int)((tpoints[1] - tpoints[0]).norm() / res * 2.) + 1;
-					int s1 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
-					int s2 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
-					int s  = std::max(s0, s1);
-					// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", s);
-					// s = s2 = 3;
-					for (double a = 0; a <= 1; a += 1. / s) {
-						for (double b = 0; b <= 1; b += 1. / s2) {
-							const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
-							// bary.normalize();
-							Eigen::Vector2d p = bary[0] * tpoints[0] + bary[1] * tpoints[1] + bary[2] * tpoints[2];
-							if (p[0] > 0 && p[0] < 2 * xs && p[1] > 0 && p[1] < 2 * ys) {
-								int x = (int)std::floor(p[0] / res);
-								int y = (int)std::floor(p[1] / res);
-								barys[x][y].push_back(bary);
-								tris[x][y].push_back(t);
-								// Eigen::Vector2d c(x * res + res / 2., y * res + res / 2.);
-								// double dist = (c - p).norm();
-								// if (dist < dists[x][y]) {
-								// 	dists[x][y] = dist;
-								// 	barys[x][y] = bary;
-								// 	tris[x][y]  = t;
-								// }
-								// Eigen::Vector4d dp = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
-								// mjtNum pos[3]      = { dp[0], dp[1], dp[2] };
-								// if (n_vGeom < MAX_VGEOM) {
-								// 	mjvGeom *g = vGeoms + n_vGeom++;
-								// 	mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-								// }
+							tpoints.push_back(Eigen::Vector2d(vpp[0], vpp[1]));
+						}
+						int st0 = (int)((tpoints[1] - tpoints[0]).norm() / res * 2.) + 1;
+						int st1 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
+						int st2 = (int)((tpoints[2] - tpoints[0]).norm() / res * 2.) + 1;
+						int st  = std::max(st0, st1);
+						for (double a = 0; a <= 1; a += 1. / st) {
+							for (double b = 0; b <= 1; b += 1. / st2) {
+								const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
+								Eigen::Vector2d p = bary[0] * tpoints[0] + bary[1] * tpoints[1] + bary[2] * tpoints[2];
+								if (p[0] > 0 && p[0] < 2 * xs && p[1] > 0 && p[1] < 2 * ys) {
+									int x = (int)std::floor(p[0] / res);
+									int y = (int)std::floor(p[1] / res);
+									// barys[x][y].push_back(bary);
+									// tris[x][y].push_back(t);
+									pressure[x][y].push_back(s.tri_e_MN().Evaluate(t, bary) * s.area(t));
+								}
 							}
 						}
 					}
 				}
+			}
+			for (int x = 0; x < cx; ++x) {
+				for (int y = 0; y < cy; ++y) {
+					int nt = pressure[x][y].size();
+					if (nt > 0) {
+						double mp = 0;
 
-				for (int x = 0; x < cx; ++x) {
-					for (int y = 0; y < cy; ++y) {
-						// if (dists[x][y] < res) {
-						// 	int t               = tris[x][y];
-						// 	double p0           = s.tri_e_MN().Evaluate(t, barys[x][y]) * s.area(t);
-						// 	//ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
-						// 	float ps            = std::min(1., (float)p0 / 0.025);
-						// 	const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
-						// 	Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
-						// 	mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
-						// 	if (n_vGeom < MAX_VGEOM) {
-						// 		mjvGeom *g = vGeoms + n_vGeom++;
-						// 		mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-						// 	}
-						// }
-						int nt = tris[x][y].size();
-						if (nt > 0) {
-							double mp = 0;
-
-							for (int i = 0; i < nt; ++i) {
-								int t = tris[x][y][i];
-								mp += s.tri_e_MN().Evaluate(t, barys[x][y][i]) * s.area(t);
-							}
-
-							double p0 = mp / nt;
-							// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
-							tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
-							float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
-
-							const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
-							Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
-							mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
-							if (n_vGeom < MAX_VGEOM) {
-								mjvGeom *g = vGeoms + n_vGeom++;
-								mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-							}
+						for (int i = 0; i < nt; ++i) {
+							// int t = tris[x][y][i];
+							mp += pressure[x][y][i];
 						}
+
+						double p0                                            = mp / nt;
+						ts->tactile_state_msg_.sensors[0].values[x * cx + y] = p0;
+
+						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
+
+						tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
+						float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
+
+						const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
+						Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
+						mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
+
+						mjvGeom *g = ts->vGeoms + ts->n_vGeom++;
+						mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+					} else {
+						ts->tactile_state_msg_.sensors[0].values[x * cx + y] = 0;
 					}
 				}
+			}
+			if (ts->publisher.getNumSubscribers() > 0) {
+				ts->tactile_state_msg_.header.stamp = ros::Time::now();
+				ts->publisher.publish(ts->tactile_state_msg_);
 			}
 		}
 	}
@@ -1130,6 +914,11 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 			scene->geoms[scene->ngeom++] = vGeoms[i];
 		}
 		n_vGeom = 0;
+		for (TactileSensor *ts : tactileSensors) {
+			for (int i = 0; i < ts->n_vGeom && scene->ngeom < scene->maxgeom; ++i) {
+				scene->geoms[scene->ngeom++] = ts->vGeoms[i];
+			}
+		}
 	}
 }
 

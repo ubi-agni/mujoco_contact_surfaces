@@ -184,6 +184,12 @@ typedef struct TactileSensor
 	std::string topicName;
 	ros::Publisher publisher;
 	double lastUpdate;
+	int cx;
+	int cy;
+	// double **values;
+	mjvGeom *vGeoms;
+	int n_vGeom;
+	tactile_msgs::TactileState tactile_state_msg_;
 
 } TactileSensor;
 
@@ -213,8 +219,8 @@ protected:
 
 private:
 	// Buffer of visual geoms
-	mjvGeom *vGeoms              = new mjvGeom[MAX_VGEOM];
-	int n_vGeom                  = 0;
+	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
+	int n_vGeom     = 0;
 	// color scaling factors for contact and tactile visualization
 	double running_scale         = 3.;
 	double current_scale         = 0.;
