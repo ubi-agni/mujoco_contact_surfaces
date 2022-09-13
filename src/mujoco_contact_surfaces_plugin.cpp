@@ -209,6 +209,17 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 {
 	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loading mujoco_contact_surfaces plugin ...");
+
+	// Check that ROS has been initialized
+	if (!ros::isInitialized()) {
+		ROS_FATAL_STREAM_NAMED("mujoco_contact_surfaces",
+		                       "A ROS node for Mujoco has not been initialized, unable to load plugin.");
+		return false;
+	}
+
+	std::string robot_namespace_ = node_handle_->getNamespace();
+	ROS_ASSERT(rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+
 	d_                    = d;
 	m_                    = m;
 	instance_map[d.get()] = this;
@@ -216,25 +227,50 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 		initCollisionFunction();
 	}
 	parseMujocoCustomFields(m.get());
-
-	// TODO: This should not be hardcoded. Add tactile sensor
-	int id = mj_name2id(m.get(), mjOBJ_GEOM, "myrmex_foam");
-	if (id >= 0) {
-		TactileSensor *ts = new TactileSensor();
-		ts->geomID        = id;
-		ts->geomName      = "myrmex_foam";
-		ts->resolution    = 0.025;
-		// for (double x = -0.19; x < 0.2; x = x + 0.02) {
-		// 	for (double y = -0.19; y < 0.2; y = y + 0.02) {
-		// 		ts->cellLocations.push_back(Vector3<double>(x, y, 0));
-		// 	}
-		// }
-		// ts->cellLocations = { Vector3<double>(0, 0, 0) };
-		tactileSensors.push_back(ts);
-	}
+	parseROSParam();
 
 	ROS_INFO_NAMED("mujoco_contact_surfaces", "Loaded mujoco_contact_surfaces");
 	return true;
+}
+
+void MujocoContactSurfacesPlugin::parseROSParam()
+{
+	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", rosparam_config_["TactileArrays"].getType());
+	if (rosparam_config_.hasMember("TactileArrays") &&
+	    rosparam_config_["TactileArrays"].getType() == XmlRpc::XmlRpcValue::TypeArray) {
+		auto tactile_arrays = rosparam_config_["TactileArrays"];
+		int n               = rosparam_config_["TactileArrays"].size();
+
+		for (int i = 0; i < n; ++i) {
+			auto ta = tactile_arrays[i];
+			if (ta.getType() == XmlRpc::XmlRpcValue::TypeStruct && ta.hasMember("updateRate") &&
+			    ta.hasMember("geomName") && ta.hasMember("topicName") && ta.hasMember("resolution") &&
+			    ta.hasMember("sensorName")) {
+				std::string geomName   = static_cast<std::string>(ta["geomName"]);
+				std::string topicName  = static_cast<std::string>(ta["topicName"]);
+				std::string sensorName = static_cast<std::string>(ta["sensorName"]);
+				double resolution      = static_cast<double>(ta["resolution"]);
+				double updateRate      = static_cast<double>(ta["updateRate"]);
+				double updatePeriod    = 1.0 / updateRate;
+
+				int id = mj_name2id(m_.get(), mjOBJ_GEOM, geomName.c_str());
+				if (id >= 0) {
+					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Adding new tactile sensor");
+					TactileSensor *ts = new TactileSensor();
+					ts->geomID        = id;
+					ts->geomName      = geomName;
+					ts->sensorName    = sensorName;
+					ts->resolution    = resolution;
+					ts->updatePeriod  = updatePeriod;
+					ts->updateRate    = updateRate;
+					ts->topicName     = topicName;
+					ts->publisher     = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1);
+					ts->lastUpdate    = 0;
+					tactileSensors.push_back(ts);
+				}
+			}
+		}
+	}
 }
 
 void MujocoContactSurfacesPlugin::update() {}
@@ -683,10 +719,12 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		// }
 
 		for (TactileSensor *ts : tactileSensors) {
+			tactile_msgs::TactileState tactile_state_msg;
 			int id        = ts->geomID;
 			double height = m->geom_size[3 * id + 2];
 			double h2     = height * height;
-			if (g1 == ts->geomID or g2 == ts->geomID) {
+			if ((g1 == ts->geomID or g2 == ts->geomID) && d_->time - ts->lastUpdate > ts->updatePeriod) {
+				ts->lastUpdate           = d_->time;
 				ContactSurface<double> s = gc->s;
 				auto mesh                = s.tri_mesh_W();
 				double xs                = m->geom_size[3 * id];

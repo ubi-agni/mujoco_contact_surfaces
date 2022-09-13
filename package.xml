@@ -12,8 +12,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>pluginlib</build_depend>
+  <build_depend>tactile_msgs</build_depend>
   <build_export_depend>pluginlib</build_export_depend>
   <exec_depend>pluginlib</exec_depend>
+  <exec_depend>tactile_msgs</exec_depend>
 
   <depend>mujoco_ros</depend>
 

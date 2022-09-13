@@ -9,6 +9,7 @@ set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined"
 find_package(catkin REQUIRED COMPONENTS
   pluginlib
   mujoco_ros
+  tactile_msgs
 )
 find_package(drake REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED Eigen)
@@ -18,6 +19,7 @@ catkin_package(
  CATKIN_DEPENDS
   pluginlib
   mujoco_ros
+  tactile_msgs
  INCLUDE_DIRS include
  LIBRARIES ${PROJECT_NAME}
 )

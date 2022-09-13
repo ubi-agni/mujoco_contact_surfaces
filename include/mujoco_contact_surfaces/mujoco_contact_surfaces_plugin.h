@@ -72,6 +72,8 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
+#include <tactile_msgs/TactileState.h>
+
 namespace mujoco_contact_surfaces {
 
 using namespace drake;
@@ -173,9 +175,15 @@ typedef struct GeomCollision
 typedef struct TactileSensor
 {
 	int geomID;
+	std::string sensorName;
 	std::string geomName;
 	// std::vector<Vector3<double>> cellLocations;
 	double resolution;
+	double updateRate;
+	double updatePeriod;
+	std::string topicName;
+	ros::Publisher publisher;
+	double lastUpdate;
 
 } TactileSensor;
 
@@ -207,6 +215,7 @@ private:
 	// Buffer of visual geoms
 	mjvGeom *vGeoms              = new mjvGeom[MAX_VGEOM];
 	int n_vGeom                  = 0;
+	// color scaling factors for contact and tactile visualization
 	double running_scale         = 3.;
 	double current_scale         = 0.;
 	double tactile_running_scale = 3.;
@@ -220,6 +229,7 @@ private:
 	std::vector<GeomCollision *> geomCollisions;
 	std::vector<TactileSensor *> tactileSensors;
 
+	void parseROSParam();
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
 

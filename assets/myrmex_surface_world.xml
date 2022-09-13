@@ -28,6 +28,10 @@
     <numeric name="cs::box1" data="0 1.0 0.1 0.3 0.3"/>
     <numeric name="cs::plate" data="0 1.0 0 0.3 0.3"/>
     <numeric name="cs::myrmex_foam" data="5e4 5.0 0 0.3 0.3"/>
+    
+    <text name="cs::tactile_geoms" data="myrmex_foam"/>
+    <numeric name="cs::tactile_update_rates" data="50"/>
+    
 
   </custom>
 
