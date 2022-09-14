@@ -29,9 +29,6 @@
     <numeric name="cs::plate" data="0 1.0 0 0.3 0.3"/>
     <numeric name="cs::myrmex_foam" data="5e4 5.0 0 0.3 0.3"/>
     
-    <text name="cs::tactile_geoms" data="myrmex_foam"/>
-    <numeric name="cs::tactile_update_rates" data="50"/>
-    
 
   </custom>
 
@@ -39,19 +36,18 @@
     <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
     <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"/>
     <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane" condim="1"/>
-    <body name="body_plate" pos="0 0 0.2" >
+    <!-- <body name="body_plate" pos="0 0 0.2" >
       <inertial pos="0 0 0.00915" mass="0.375" diaginertia="0.000860 0.000860 0.00171"/>
       <freejoint name="plate_joint"/>
       <geom name="plate" type="mesh" mesh="plate_8in_col" rgba="0.7 0.7 0.7 0.5"/>
-    </body> 
-    <!--body name="body_box1" pos="0 0 0.5">
+    </body>  -->
+    <body name="body_box1" pos="0 0 0.5">
       <freejoint/>
       <geom name="box1" type="box"  size="0.1 0.1 0.1" rgba="0.7 0.7 0.7 0.5"/>
-    </body-->
+    </body>
     <body name="body_myrmex" pos="0 0.0 0.0" >
       
-      <geom name="myrmex_base" type="box" pos="0 0 0.015" size="0.2 0.2 0.015" rgba="0.7 0.7 0.7 0.5"/>
-      <geom name="myrmex_foam" type="box" pos="0 0 0.033" size="0.2 0.2 0.003" rgba="0.5 0.5 0.5 0.5"/>
+      <geom name="myrmex_foam" type="box" pos="0 0 0.033" size="0.2 0.2 0.02" rgba="0.5 0.5 0.5 0.5"/>
 
     </body>
   </worldbody>
