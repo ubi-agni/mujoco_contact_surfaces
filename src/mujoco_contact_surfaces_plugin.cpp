@@ -262,7 +262,7 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 					ts->updatePeriod  = updatePeriod;
 					ts->updateRate    = updateRate;
 					ts->topicName     = topicName;
-					ts->publisher     = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1);
+					ts->publisher     = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1, true);
 					ts->lastUpdate    = 0;
 					double xs         = m_->geom_size[3 * id];
 					double ys         = m_->geom_size[3 * id + 1];
