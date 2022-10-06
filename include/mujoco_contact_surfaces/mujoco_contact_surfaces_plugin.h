@@ -84,33 +84,35 @@
 #include <mujoco_ros/mujoco_sim.h>
 #include <mujoco_ros/plugin_utils.h>
 
-#include "mujoco.h"
+#include <mujoco/mujoco.h>
 
-#include "drake/geometry/proximity/make_sphere_mesh.h"
-#include "drake/geometry/proximity/make_sphere_field.h"
-#include "drake/geometry/proximity/make_box_mesh.h"
-#include "drake/geometry/proximity/make_box_field.h"
-#include "drake/geometry/proximity/make_cylinder_mesh.h"
-#include "drake/geometry/proximity/make_cylinder_field.h"
-#include "drake/geometry/proximity/make_convex_field.h"
-#include "drake/geometry/proximity/make_convex_mesh.h"
-#include "drake/geometry/proximity/volume_to_surface_mesh.h"
-#include "drake/geometry/proximity/polygon_surface_mesh.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/field_intersection.h"
-#include "drake/geometry/proximity/mesh_intersection.h"
-#include "drake/geometry/proximity/mesh_plane_intersection.h"
-#include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/query_results/contact_surface.h"
-#include "drake/geometry/geometry_ids.h"
-#include "drake/math/rigid_transform.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/multibody/hydroelastics/hydroelastic_engine.h"
-#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
-#include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
+#include <drake/geometry/proximity/make_sphere_mesh.h>
+#include <drake/geometry/proximity/make_sphere_field.h>
+#include <drake/geometry/proximity/make_box_mesh.h>
+#include <drake/geometry/proximity/make_box_field.h>
+#include <drake/geometry/proximity/make_cylinder_mesh.h>
+#include <drake/geometry/proximity/make_cylinder_field.h>
+#include <drake/geometry/proximity/make_convex_field.h>
+#include <drake/geometry/proximity/make_convex_mesh.h>
+#include <drake/geometry/proximity/volume_to_surface_mesh.h>
+#include <drake/geometry/proximity/polygon_surface_mesh.h>
+#include <drake/geometry/proximity/triangle_surface_mesh.h>
+#include <drake/geometry/proximity/obb.h>
+#include <drake/geometry/proximity/field_intersection.h>
+#include <drake/geometry/proximity/mesh_intersection.h>
+#include <drake/geometry/proximity/mesh_plane_intersection.h>
+#include <drake/geometry/proximity/obj_to_surface_mesh.h>
+#include <drake/geometry/proximity/bvh.h>
+#include <drake/geometry/query_results/contact_surface.h>
+#include <drake/geometry/geometry_ids.h>
+#include <drake/math/rigid_transform.h>
+#include <drake/math/rotation_matrix.h>
+#include <drake/multibody/hydroelastics/hydroelastic_engine.h>
+#include <drake/multibody/plant/hydroelastic_traction_calculator.h>
+#include <drake/multibody/plant/coulomb_friction.h>
+#include <drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h>
+
+#include <tactile_msgs/TactileState.h>
 
 namespace mujoco_contact_surfaces {
 
@@ -122,6 +124,7 @@ using namespace drake::math;
 using namespace drake::multibody;
 using namespace drake::multibody::internal;
 using namespace MujocoSim;
+using namespace std::chrono;
 
 const int MAX_VGEOM      = 10000;
 const std::string PREFIX = "cs::";
@@ -210,6 +213,27 @@ typedef struct GeomCollision
 	GeomCollision(int g1, int g2, ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
 
+typedef struct TactileSensor
+{
+	int geomID;
+	std::string sensorName;
+	std::string geomName;
+	// std::vector<Vector3<double>> cellLocations;
+	double resolution;
+	double updateRate;
+	double updatePeriod;
+	std::string topicName;
+	ros::Publisher publisher;
+	double lastUpdate;
+	int cx;
+	int cy;
+	// double **values;
+	mjvGeom *vGeoms;
+	int n_vGeom;
+	tactile_msgs::TactileState tactile_state_msg_;
+
+} TactileSensor;
+
 class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
 {
 public:
@@ -238,14 +262,24 @@ private:
 	// Buffer of visual geoms
 	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
 	int n_vGeom     = 0;
+	// color scaling factors for contact and tactile visualization
+	double running_scale         = 3.;
+	double current_scale         = 0.;
+	double tactile_running_scale = 3.;
+	double tactile_current_scale = 0.;
 
-	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kPolygon;
+	// TODO there seems to be a bug where this is not correctly parsed
+	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
 	bool visualizeContactSurfaces                                         = false;
 
 	std::map<int, ContactProperties *> contactProperties;
+	std::vector<GeomCollision *> geomCollisions;
+	std::vector<TactileSensor *> tactileSensors;
+
+	void parseROSParam();
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
-	std::vector<GeomCollision *> geomCollisions;
+
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
 	template <class T>
 	void visualizeMeshElement(int face, T mesh, double fn);

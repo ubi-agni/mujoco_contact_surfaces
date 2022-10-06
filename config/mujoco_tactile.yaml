@@ -1,0 +1,4 @@
+MujocoPlugins:
+  - type: mujoco_contact_surfaces/MujocoContactSurfacesPlugin
+    TactileArrays:
+      - { sensorName: "myrmex_sensor0", geomName: "myrmex_foam", topicName: "/tactile_module_16x16_v2", updateRate: 50.0, resolution: 0.025 }
