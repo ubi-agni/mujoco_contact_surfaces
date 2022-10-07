@@ -14,6 +14,7 @@
   <depend>pluginlib</depend>
   <depend>tactile_msgs</depend>
   <depend>mujoco_ros</depend>
+  <depend>spdlog</depend>
 
   <export>
     <mujoco_ros plugin="${prefix}/mujoco_contact_surfaces_plugin.xml" />
