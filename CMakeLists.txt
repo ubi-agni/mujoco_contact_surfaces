@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(drake REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED Eigen)
-find_package(fmt CONFIG REQUIRED)
 
 catkin_package(
  CATKIN_DEPENDS
@@ -45,10 +44,9 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  mujoco
   drake::drake
 )
-install(TARGETS ${PROJECT_NAME} 
+install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
