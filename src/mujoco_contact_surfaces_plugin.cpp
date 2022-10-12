@@ -538,7 +538,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		}
 	}
 	for (TactileSensor *ts : tactileSensors) {
-		if (d_->time - ts->lastUpdate > ts->updatePeriod) {
+		if (d_->time - ts->lastUpdate >= ts->updatePeriod) {
 			ts->n_vGeom    = 0;
 			ts->lastUpdate = d_->time;
 			int id         = ts->geomID;
