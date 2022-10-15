@@ -15,6 +15,8 @@
   <depend>tactile_msgs</depend>
   <depend>mujoco_ros</depend>
   <depend>spdlog</depend>
+  <exec_depend>coinor-libclp-dev</exec_depend>
+  <exec_depend>msgpack</exec_depend>
 
   <export>
     <mujoco_ros plugin="${prefix}/mujoco_contact_surfaces_plugin.xml" />
