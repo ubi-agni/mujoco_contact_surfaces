@@ -203,7 +203,6 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 			}
 		}
 	}
-	delete this;
 }
 
 bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
