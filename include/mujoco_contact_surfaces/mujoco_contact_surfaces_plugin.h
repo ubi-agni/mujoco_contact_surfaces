@@ -221,10 +221,10 @@ typedef struct TactileSensor
 	// std::vector<Vector3<double>> cellLocations;
 	double resolution;
 	double updateRate;
-	double updatePeriod;
+	ros::Duration updatePeriod;
 	std::string topicName;
 	ros::Publisher publisher;
-	double lastUpdate;
+	ros::Time lastUpdate;
 	int cx;
 	int cy;
 	// double **values;

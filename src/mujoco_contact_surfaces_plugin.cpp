@@ -249,7 +249,7 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 				std::string sensorName = static_cast<std::string>(ta["sensorName"]);
 				double resolution      = static_cast<double>(ta["resolution"]);
 				double updateRate      = static_cast<double>(ta["updateRate"]);
-				double updatePeriod    = 1.0 / updateRate;
+				ros::Duration updatePeriod(1.0 / updateRate);
 
 				int id = mj_name2id(m_.get(), mjOBJ_GEOM, geomName.c_str());
 				if (id >= 0) {
@@ -262,7 +262,7 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 					ts->updateRate    = updateRate;
 					ts->topicName     = topicName;
 					ts->publisher     = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1, true);
-					ts->lastUpdate    = 0;
+					ts->lastUpdate    = ros::Time();
 					double xs         = m_->geom_size[3 * id];
 					double ys         = m_->geom_size[3 * id + 1];
 					ts->cx            = (int)(2 * xs / resolution) ;
@@ -537,9 +537,13 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		}
 	}
 	for (TactileSensor *ts : tactileSensors) {
-		if (d_->time - ts->lastUpdate >= ts->updatePeriod) {
+		auto now = ros::Time::now();
+		if (now < ts->lastUpdate) // reset lastUpdate after jump back in time
+			ts->lastUpdate = ros::Time();
+
+		if (now - ts->lastUpdate >= ts->updatePeriod) {
+			ts->lastUpdate = now;
 			ts->n_vGeom    = 0;
-			ts->lastUpdate = d_->time;
 			int id         = ts->geomID;
 			int cx         = ts->cx;
 			int cy         = ts->cy;
@@ -640,7 +644,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 				}
 			}
 			if (ts->publisher.getNumSubscribers() > 0) {
-				ts->tactile_state_msg_.header.stamp = ros::Time::now();
+				ts->tactile_state_msg_.header.stamp = now;
 				ts->publisher.publish(ts->tactile_state_msg_);
 			}
 		}
