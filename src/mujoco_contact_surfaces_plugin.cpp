@@ -249,7 +249,7 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 				std::string sensorName = static_cast<std::string>(ta["sensorName"]);
 				double resolution      = static_cast<double>(ta["resolution"]);
 				double updateRate      = static_cast<double>(ta["updateRate"]);
-				double updatePeriod    = (int)(1000.0 / updateRate);
+				double updatePeriod    = 1.0 / updateRate;
 
 				int id = mj_name2id(m_.get(), mjOBJ_GEOM, geomName.c_str());
 				if (id >= 0) {
@@ -537,7 +537,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 		}
 	}
 	for (TactileSensor *ts : tactileSensors) {
-		if ((int)(1000*d_->time) - (int)(1000*ts->lastUpdate) >= ts->updatePeriod) {
+		if (d_->time - ts->lastUpdate >= ts->updatePeriod) {
 			ts->n_vGeom    = 0;
 			ts->lastUpdate = d_->time;
 			int id         = ts->geomID;
