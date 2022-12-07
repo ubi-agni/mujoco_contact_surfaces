@@ -2,6 +2,12 @@
 
 Implementation of hydroelastic contact surfaces as a mujoco plugin. This plugin can be used with https://github.com/ubi-agni/mujoco_ros_pkgs.
 
+```sh
+# Download and extract Drake
+cd <folder to install drake into>
+curl -SL https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz | tar -xz
+export drake_DIR=$PWD/drake  # Tell cmake where to find Drake
+```
 ## Hydroelastic contact surfaces
 For more information refer to:
 - https://drake.mit.edu/
