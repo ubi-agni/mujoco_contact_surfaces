@@ -7,6 +7,7 @@ Implementation of hydroelastic contact surfaces as a mujoco plugin. This plugin 
 cd <folder to install drake into>
 curl -SL https://github.com/RobotLocomotion/drake/releases/download/v1.8.0/drake-20220919-focal.tar.gz | tar -xz
 export drake_DIR=$PWD/drake  # Tell cmake where to find Drake
+sudo drake/share/drake/setup/install_prereqs  # Install Drake dependencies
 ```
 ## Hydroelastic contact surfaces
 For more information refer to:
