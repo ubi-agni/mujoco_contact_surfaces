@@ -265,8 +265,8 @@ void MujocoContactSurfacesPlugin::parseROSParam()
 					ts->lastUpdate    = ros::Time();
 					double xs         = m_->geom_size[3 * id];
 					double ys         = m_->geom_size[3 * id + 1];
-					ts->cx            = (int)(2 * xs / resolution) ;
-					ts->cy            = (int)(2 * ys / resolution) ;
+					ts->cx            = (int)(2 * xs / resolution);
+					ts->cy            = (int)(2 * ys / resolution);
 					ts->vGeoms        = new mjvGeom[ts->cx * ts->cy];
 					ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces",
 					                      "Found tactile sensor: " << sensorName << " " << ts->cx << "x" << ts->cy);
@@ -775,12 +775,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								    MakeSpherePressureField<double>(*sphere, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 								cp = new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation,
-								                           staticFriction, dynamicFriction);
+								                           staticFriction, dynamicFriction, resolutionHint);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction);
+								cp = new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction,
+								                           resolutionHint);
 							}
 
 							contactProperties[id] = cp;
@@ -804,12 +805,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								    MakeCylinderPressureField<double>(*cylinder, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 								cp = new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation,
-								                           staticFriction, dynamicFriction);
+								                           staticFriction, dynamicFriction, resolutionHint);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction);
+								cp = new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction,
+								                           resolutionHint);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -829,12 +831,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								    MakeBoxPressureField<double>(*box, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 								cp = new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation,
-								                           staticFriction, dynamicFriction);
+								                           staticFriction, dynamicFriction, resolutionHint);
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp = new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction);
+								cp = new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction,
+								                           resolutionHint);
 							}
 							contactProperties[id] = cp;
 							break;
@@ -888,11 +891,12 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
 										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 										cp = new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
-										                           dissipation, staticFriction, dynamicFriction);
+										                           dissipation, staticFriction, dynamicFriction, resolutionHint);
 									} else {
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction);
+										cp = new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction,
+										                           resolutionHint);
 									}
 									contactProperties[id] = cp;
 									break;
@@ -920,6 +924,141 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 		for (TactileSensor *ts : tactileSensors) {
 			for (int i = 0; i < ts->n_vGeom && scene->ngeom < scene->maxgeom; ++i) {
 				scene->geoms[scene->ngeom++] = ts->vGeoms[i];
+			}
+		}
+	}
+}
+
+void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const int id)
+{
+	// check if contactProperties exist for the specific geom
+	if (contactProperties.find(id) != contactProperties.end()) {
+		ContactProperties *cp = contactProperties[id];
+		int geomType          = m->geom_type[id];
+		switch (geomType) {
+			case mjGEOM_SPHERE: // sphere
+			{
+				Sphere *sphere = new Sphere(m->geom_size[3 * id]);
+				cp->shape      = sphere;
+				if (cp->contact_type == SOFT) {
+					VolumeMesh<double> *vm                    = new VolumeMesh<double>(MakeSphereVolumeMesh<double>(
+                   *sphere, cp->resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+					    MakeSpherePressureField<double>(*sphere, vm, cp->hydroelastic_modulus));
+					Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+					cp->vm                            = vm;
+					cp->bvh_v                         = bvh;
+				} else {
+					TriangleSurfaceMesh<double> *sm =
+					    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, cp->resolution_hint));
+					Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+					cp->sm                                     = sm;
+					cp->bvh_s                                  = bvh;
+				}
+				break;
+			}
+			case mjGEOM_CYLINDER: // cylinder
+			{
+				Cylinder *cylinder = new Cylinder(m->geom_size[3 * id], 2 * m->geom_size[3 * id + 1]);
+				cp->shape          = cylinder;
+				if (cp->contact_type == SOFT) {
+					VolumeMesh<double> *vm;
+					if (cp->resolution_hint > 0) {
+						vm = new VolumeMesh<double>(MakeCylinderVolumeMeshWithMa<double>(*cylinder, cp->resolution_hint));
+					}
+					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+					    MakeCylinderPressureField<double>(*cylinder, vm, cp->hydroelastic_modulus));
+					Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+					cp->vm                            = vm;
+					cp->bvh_v                         = bvh;
+				} else {
+					TriangleSurfaceMesh<double> *sm =
+					    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, cp->resolution_hint));
+					Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+					cp->sm                                     = sm;
+					cp->bvh_s                                  = bvh;
+				}
+				break;
+			}
+			case mjGEOM_BOX: // box
+			{
+				Box *box  = new Box(2 * m->geom_size[3 * id], 2 * m->geom_size[3 * id + 1], 2 * m->geom_size[3 * id + 2]);
+				cp->shape = box;
+				if (cp->contact_type == SOFT) {
+					VolumeMesh<double> *vm;
+					if (cp->resolution_hint > 0) {
+						vm = new VolumeMesh<double>(MakeBoxVolumeMesh<double>(*box, cp->resolution_hint));
+					} else {
+						vm = new VolumeMesh<double>(MakeBoxVolumeMeshWithMa<double>(*box));
+					}
+					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+					    MakeBoxPressureField<double>(*box, vm, cp->hydroelastic_modulus));
+					Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+					cp->vm                            = vm;
+					cp->bvh_v                         = bvh;
+				} else {
+					TriangleSurfaceMesh<double> *sm =
+					    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, cp->resolution_hint));
+					Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+					cp->sm                                     = sm;
+					cp->bvh_s                                  = bvh;
+				}
+				break;
+			}
+			case mjGEOM_MESH: // mesh
+			{
+				int geom_dataid = m->geom_dataid[id];
+				if (geom_dataid >= 0) {
+					int nv    = m->mesh_vertnum[geom_dataid];
+					int nf    = m->mesh_facenum[geom_dataid];
+					int v_adr = m->mesh_vertadr[geom_dataid];
+					int f_adr = m->mesh_faceadr[geom_dataid];
+					if (nv > 0 && nf > 0 && v_adr >= 0 && f_adr >= 0) {
+						std::vector<SurfaceTriangle> triangles;
+						std::vector<Vector3<double>> vertices;
+						for (int i = 0; i < nv; ++i) {
+							int v = v_adr + 3 * i;
+							vertices.push_back(Vector3<double>(m->mesh_vert[v], m->mesh_vert[v + 1], m->mesh_vert[v + 2]));
+						}
+						for (int i = 0; i < nf; ++i) {
+							int f = f_adr + 3 * i;
+							triangles.push_back(SurfaceTriangle(m->mesh_face[f], m->mesh_face[f + 1], m->mesh_face[f + 2]));
+						}
+						TriangleSurfaceMesh<double> *sm =
+						    new TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
+						if (cp->contact_type == SOFT) {
+							std::vector<Vector3<double>> volume_mesh_vertices(sm->vertices().begin(), sm->vertices().end());
+
+							const Vector3<double> centroid = CalcCentroidOfEnclosedVolume(*sm);
+							volume_mesh_vertices.push_back(centroid);
+
+							const int centroid_index = volume_mesh_vertices.size() - 1;
+
+							// The number of tetrahedra in the volume mesh is the same as the number of
+							// triangles in the surface mesh.
+							std::vector<VolumeElement> volume_mesh_elements;
+							volume_mesh_elements.reserve(sm->num_elements());
+							for (const SurfaceTriangle &e : sm->triangles()) {
+								// Orient the tetrahedron such that it has positive signed volume (assuming
+								// outward facing normal for the surface triangle).
+								volume_mesh_elements.push_back({ centroid_index, e.vertex(0), e.vertex(1), e.vertex(2) });
+							}
+
+							VolumeMesh<double> *vm =
+							    new VolumeMesh<double>(std::move(volume_mesh_elements), std::move(volume_mesh_vertices));
+							VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+							    MakeConvexPressureField<double>(vm, cp->hydroelastic_modulus));
+							Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+							cp->vm                            = vm;
+							cp->bvh_v                         = bvh;
+						} else {
+							Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+							cp->sm                                     = sm;
+							cp->bvh_s                                  = bvh;
+						}
+						break;
+					}
+				}
 			}
 		}
 	}

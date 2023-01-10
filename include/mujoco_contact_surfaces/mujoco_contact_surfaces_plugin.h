@@ -152,10 +152,12 @@ typedef struct ContactProperties
 	const double dissipation;
 	const double static_friction;
 	const double dynamic_friction;
+	const double resolution_hint;
 
 	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape, VolumeMesh<double> *vm,
 	                  VolumeMeshFieldLinear<double, double> *pf, Bvh<Obb, VolumeMesh<double>> *bvh_v,
-	                  double hydroelastic_modulus, double dissipation, double static_friction, double dynamic_friction)
+	                  double hydroelastic_modulus, double dissipation, double static_friction, double dynamic_friction,
+	                  double resolution_hint)
 	    : mujoco_geom_id(geom_id)
 	    , drake_id(GeometryId::get_new_id())
 	    , geom_name(geom_name)
@@ -167,10 +169,11 @@ typedef struct ContactProperties
 	    , hydroelastic_modulus(hydroelastic_modulus)
 	    , dissipation(dissipation)
 	    , static_friction(static_friction)
-	    , dynamic_friction(dynamic_friction){};
+	    , dynamic_friction(dynamic_friction)
+	    , resolution_hint(resolution_hint){};
 	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape,
 	                  TriangleSurfaceMesh<double> *sm, Bvh<Obb, TriangleSurfaceMesh<double>> *bvh_s,
-	                  double static_friction, double dynamic_friction)
+	                  double static_friction, double dynamic_friction, double resolution_hint)
 	    : mujoco_geom_id(geom_id)
 	    , drake_id(GeometryId::get_new_id())
 	    , geom_name(geom_name)
@@ -181,7 +184,8 @@ typedef struct ContactProperties
 	    , hydroelastic_modulus(std::numeric_limits<double>::infinity())
 	    , dissipation(1.0)
 	    , static_friction(static_friction)
-	    , dynamic_friction(dynamic_friction){};
+	    , dynamic_friction(dynamic_friction)
+	    , resolution_hint(resolution_hint){};
 	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, double static_friction,
 	                  double dynamic_friction)
 	    : mujoco_geom_id(geom_id)
@@ -191,7 +195,8 @@ typedef struct ContactProperties
 	    , hydroelastic_modulus(std::numeric_limits<double>::infinity())
 	    , dissipation(1.0)
 	    , static_friction(static_friction)
-	    , dynamic_friction(dynamic_friction){};
+	    , dynamic_friction(dynamic_friction)
+	    , resolution_hint(0.0){};
 } ContactProperties;
 
 typedef struct PointCollision
@@ -252,6 +257,7 @@ public:
 	virtual void reset();
 	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
 	void passive_cb(const mjModel *m, mjData *d);
+	void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id);
 
 protected:
 	// Mujoco model and data pointers
