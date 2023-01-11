@@ -302,8 +302,12 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 {
 	int t1                 = m->geom_type[g1];
 	int t2                 = m->geom_type[g2];
-	ContactProperties *cp1 = contactProperties[g1];
-	ContactProperties *cp2 = contactProperties[g2];
+	
+	ContactProperties *cp1 = NULL;
+	ContactProperties *cp2 = NULL;
+	if (contactProperties.find(g1) != contactProperties.end()) ContactProperties *cp1 = contactProperties[g1];
+	if (contactProperties.find(g2) != contactProperties.end()) ContactProperties *cp2 = contactProperties[g2];
+
 	if (cp1 == NULL or cp2 == NULL or (cp1->contact_type == RIGID and cp2->contact_type == RIGID)) {
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 	}
