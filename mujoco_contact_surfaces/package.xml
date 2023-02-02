@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mujoco_contact_surfaces</name>
+  <version>1.0.0</version>
+  <description>The mujoco_contact_surfaces package</description>
+
+
+  <maintainer email="fpatzelt@techfak.uni-bielefeld.de">Florian Patzelt</maintainer>
+  <author>Florian Patzelt</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>pluginlib</depend>
+  <depend>mujoco_ros</depend>
+  <depend>spdlog</depend>
+  <exec_depend>coinor-libclp-dev</exec_depend>
+  <exec_depend>msgpack</exec_depend>
+
+  <export>
+    <mujoco_ros plugin="${prefix}/mujoco_contact_surfaces_plugin.xml" />
+  </export>
+</package>

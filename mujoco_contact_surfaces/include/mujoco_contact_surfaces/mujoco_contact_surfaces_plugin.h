@@ -112,8 +112,6 @@
 #include <drake/multibody/plant/coulomb_friction.h>
 #include <drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h>
 
-#include <tactile_msgs/TactileState.h>
-
 namespace mujoco_contact_surfaces {
 
 using namespace std::chrono;
@@ -218,27 +216,6 @@ typedef struct GeomCollision
 	GeomCollision(int g1, int g2, ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
 
-typedef struct TactileSensor
-{
-	int geomID;
-	std::string sensorName;
-	std::string geomName;
-	// std::vector<Vector3<double>> cellLocations;
-	double resolution;
-	double updateRate;
-	ros::Duration updatePeriod;
-	std::string topicName;
-	ros::Publisher publisher;
-	ros::Time lastUpdate;
-	int cx;
-	int cy;
-	// double **values;
-	mjvGeom *vGeoms;
-	int n_vGeom;
-	tactile_msgs::TactileState tactile_state_msg_;
-
-} TactileSensor;
-
 class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
 {
 public:
@@ -246,9 +223,6 @@ public:
 
 	// Overlead entry point
 	virtual bool load(mjModelPtr m, mjDataPtr d);
-
-	// Called by mujoco
-	virtual void update();
 
 	virtual void passiveCallback(mjModelPtr model, mjDataPtr data);
 	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
@@ -263,26 +237,23 @@ protected:
 	// Mujoco model and data pointers
 	mjModelPtr m_;
 	mjDataPtr d_;
+	bool visualizeContactSurfaces = false;
+	std::vector<GeomCollision *> geomCollisions;
 
 private:
 	// Buffer of visual geoms
 	mjvGeom *vGeoms = new mjvGeom[MAX_VGEOM];
 	int n_vGeom     = 0;
-	// color scaling factors for contact and tactile visualization
-	double running_scale         = 3.;
-	double current_scale         = 0.;
-	double tactile_running_scale = 3.;
-	double tactile_current_scale = 0.;
+	// color scaling factors for contact
+	double running_scale = 3.;
+	double current_scale = 0.;
 
 	// TODO there seems to be a bug where this is not correctly parsed
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
-	bool visualizeContactSurfaces                                         = false;
 
 	std::map<int, ContactProperties *> contactProperties;
-	std::vector<GeomCollision *> geomCollisions;
-	std::vector<TactileSensor *> tactileSensors;
+	
 
-	void parseROSParam();
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
 
@@ -291,4 +262,4 @@ private:
 	void visualizeMeshElement(int face, T mesh, double fn);
 };
 
-} // namespace mujoco_contact_surfaces
+} // namespace mujoco_contact_surface_sensors

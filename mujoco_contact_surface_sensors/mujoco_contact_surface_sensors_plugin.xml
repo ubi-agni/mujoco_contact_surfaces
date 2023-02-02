@@ -1,0 +1,10 @@
+<library path="lib/libmujoco_contact_surface_sensors">
+  <class
+    name="mujoco_contact_surface_sensors/MujocoContactSurfaceSensorsPlugin"
+    type="mujoco_contact_surface_sensors::MujocoContactSurfaceSensorsPlugin"
+    base_class_type="mujoco_contact_surfaces::MujocoContactSurfacesPlugin">
+    <description>
+      Mujoco plugin that allows to replace the default point contacts of mujoco with contact surfaces.
+    </description>
+  </class>
+</library>

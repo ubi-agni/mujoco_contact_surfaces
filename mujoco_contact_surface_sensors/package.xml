@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mujoco_contact_surfaces</name>
+  <name>mujoco_contact_surface_sensors</name>
   <version>1.0.0</version>
-  <description>The mujoco_contact_surfaces package</description>
+  <description>The mujoco_contact_surface_sensors package</description>
 
 
   <maintainer email="fpatzelt@techfak.uni-bielefeld.de">Florian Patzelt</maintainer>
@@ -12,13 +12,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>pluginlib</depend>
-  <depend>tactile_msgs</depend>
   <depend>mujoco_ros</depend>
-  <depend>spdlog</depend>
-  <exec_depend>coinor-libclp-dev</exec_depend>
-  <exec_depend>msgpack</exec_depend>
+  <depend>mujoco_contact_surfaces</depend>
+  <depend>tactile_msgs</depend>
 
   <export>
-    <mujoco_ros plugin="${prefix}/mujoco_contact_surfaces_plugin.xml" />
+    <mujoco_contact_surfaces plugin="${prefix}/mujoco_contact_surface_sensors_plugin.xml" />
   </export>
 </package>
