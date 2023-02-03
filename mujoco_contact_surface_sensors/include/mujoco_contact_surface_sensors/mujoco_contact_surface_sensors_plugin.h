@@ -121,6 +121,7 @@ public:
 	// Overlead entry point
 	virtual bool load(mjModelPtr m, mjDataPtr d);
 
+	virtual void passiveCallback(mjModelPtr model, mjDataPtr data);
 	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
 
 	void passive_cb(const mjModel *m, mjData *d);

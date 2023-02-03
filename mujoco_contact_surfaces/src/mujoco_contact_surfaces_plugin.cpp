@@ -473,7 +473,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			// 	mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
 			// }
 			// visualize
-			if (visualizeContactSurfaces) {				
+			if (visualizeContactSurfaces) {
 				current_scale = std::max(current_scale, std::abs(fn));
 				if (gc->s.is_triangle()) {
 					visualizeMeshElement(pc.face, gc->s.tri_mesh_W(), fn);
@@ -750,7 +750,6 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 {
 	if (visualizeContactSurfaces) {
 		int n = std::min(n_vGeom, scene->maxgeom);
-						ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "renderCB " << n_vGeom << " " << scene->maxgeom);
 		for (int i = 0; i < n; ++i) {
 			scene->geoms[scene->ngeom++] = vGeoms[i];
 		}

@@ -17,6 +17,6 @@
   <depend>tactile_msgs</depend>
 
   <export>
-    <mujoco_contact_surfaces plugin="${prefix}/mujoco_contact_surface_sensors_plugin.xml" />
+    <mujoco_ros plugin="${prefix}/mujoco_contact_surface_sensors_plugin.xml" />
   </export>
 </package>

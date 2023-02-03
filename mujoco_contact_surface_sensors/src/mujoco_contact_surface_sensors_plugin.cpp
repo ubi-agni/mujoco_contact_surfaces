@@ -92,6 +92,12 @@ bool MujocoContactSurfaceSensorsPlugin::load(mjModelPtr m, mjDataPtr d)
 	return true;
 }
 
+void MujocoContactSurfaceSensorsPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
+{
+	passive_cb(model.get(), data.get());
+	MujocoContactSurfacesPlugin::passive_cb(model.get(), data.get());
+}
+
 void MujocoContactSurfaceSensorsPlugin::parseROSParam()
 {
 	if (rosparam_config_.hasMember("TactileArrays") &&
@@ -239,8 +245,6 @@ void MujocoContactSurfaceSensorsPlugin::passive_cb(const mjModel *m, mjData *d)
 						double p0                                            = mp / nt;
 						ts->tactile_state_msg_.sensors[0].values[x * cx + y] = p0;
 
-						// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "P*A: " << p0);
-
 						tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
 						float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
 
@@ -261,7 +265,6 @@ void MujocoContactSurfaceSensorsPlugin::passive_cb(const mjModel *m, mjData *d)
 			}
 		}
 	}
-	MujocoContactSurfacesPlugin::passive_cb(m, d);
 }
 
 void MujocoContactSurfaceSensorsPlugin::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
@@ -279,4 +282,4 @@ void MujocoContactSurfaceSensorsPlugin::renderCallback(mjModelPtr model, mjDataP
 } // namespace mujoco_contact_surface_sensors
 
 PLUGINLIB_EXPORT_CLASS(mujoco_contact_surface_sensors::MujocoContactSurfaceSensorsPlugin,
-                       mujoco_contact_surfaces::MujocoContactSurfacesPlugin)
+                       MujocoSim::MujocoPlugin)

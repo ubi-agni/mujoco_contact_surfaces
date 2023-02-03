@@ -2,7 +2,7 @@
   <class
     name="mujoco_contact_surface_sensors/MujocoContactSurfaceSensorsPlugin"
     type="mujoco_contact_surface_sensors::MujocoContactSurfaceSensorsPlugin"
-    base_class_type="mujoco_contact_surfaces::MujocoContactSurfacesPlugin">
+    base_class_type="MujocoSim::MujocoPlugin">
     <description>
       Mujoco plugin that allows to replace the default point contacts of mujoco with contact surfaces.
     </description>
