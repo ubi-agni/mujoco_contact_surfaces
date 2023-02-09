@@ -77,6 +77,7 @@
 /* Authors: Florian Patzelt*/
 
 #pragma once
+#include <boost/shared_ptr.hpp>
 
 #include <chrono>
 #include <pluginlib/class_loader.h>
@@ -103,7 +104,6 @@
 #include <drake/geometry/proximity/mesh_plane_intersection.h>
 #include <drake/geometry/proximity/obj_to_surface_mesh.h>
 #include <drake/geometry/proximity/bvh.h>
-#include <drake/geometry/query_results/contact_surface.h>
 #include <drake/geometry/geometry_ids.h>
 #include <drake/math/rigid_transform.h>
 #include <drake/math/rotation_matrix.h>
@@ -111,6 +111,9 @@
 #include <drake/multibody/plant/hydroelastic_traction_calculator.h>
 #include <drake/multibody/plant/coulomb_friction.h>
 #include <drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h>
+#include <pluginlib/class_loader.h>
+#include <mujoco_contact_surfaces/common_types.h>
+#include <mujoco_contact_surfaces/plugin_utils.h>
 
 namespace mujoco_contact_surfaces {
 
@@ -197,25 +200,6 @@ typedef struct ContactProperties
 	    , resolution_hint(0.0){};
 } ContactProperties;
 
-typedef struct PointCollision
-{
-	Vector3<double> p;
-	Vector3<double> n;
-	double fn0;
-	double stiffness;
-	double damping;
-	int face;
-} PointCollision;
-
-typedef struct GeomCollision
-{
-	std::vector<PointCollision> pointCollisions;
-	ContactSurface<double> s;
-	int g1;
-	int g2;
-	GeomCollision(int g1, int g2, ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
-} GeomCollision;
-
 class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
 {
 public:
@@ -252,7 +236,6 @@ private:
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
 
 	std::map<int, ContactProperties *> contactProperties;
-	
 
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
@@ -260,6 +243,11 @@ private:
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
 	template <class T>
 	void visualizeMeshElement(int face, T mesh, double fn);
+
+	// Interface loader
+	boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> surface_plugin_loader;
+	// list of registered and loaded plugins
+	std::vector<SurfacePluginPtr> plugins, cb_ready_plugins;
 };
 
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_contact_surfaces

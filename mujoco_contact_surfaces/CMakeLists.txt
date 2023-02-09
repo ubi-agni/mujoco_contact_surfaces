@@ -30,6 +30,7 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   src/mujoco_contact_surfaces_plugin.cpp
+  src/plugin_utils.cpp
 )
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   include

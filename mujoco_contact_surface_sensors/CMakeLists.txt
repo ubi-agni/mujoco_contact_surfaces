@@ -30,7 +30,8 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-  src/mujoco_contact_surface_sensors_plugin.cpp
+  src/tactile_sensor_base.cpp
+  src/flat_tactile_sensor.cpp
 )
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   include

@@ -227,6 +227,17 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	}
 	parseMujocoCustomFields(m.get());
 
+	// Parse, register and load plugins
+	XmlRpc::XmlRpcValue plugin_config;
+	if (mujoco_contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader, plugin_config)) {
+		mujoco_contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader, plugins);
+	}
+	for (const auto &plugin : plugins) {
+		if (plugin->safe_load(m, d)) {
+			cb_ready_plugins.push_back(plugin);
+		}
+	}
+
 	ROS_INFO_NAMED("mujoco_contact_surfaces", "Loaded mujoco_contact_surfaces");
 	return true;
 }
@@ -234,6 +245,9 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 void MujocoContactSurfacesPlugin::reset()
 {
 	geomCollisions.clear();
+	for (const auto &plugin : plugins) {
+		plugin->safe_reset();
+	}
 	// contactProperties.clear();
 	// instance_map.erase(d_.get());
 }
@@ -380,6 +394,9 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
+	for (const auto &plugin : cb_ready_plugins) {
+		plugin->update(m, d, geomCollisions);
+	}
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
 		n_vGeom       = 0;
@@ -754,6 +771,9 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 			scene->geoms[scene->ngeom++] = vGeoms[i];
 		}
 		n_vGeom = 0;
+		for (const auto &plugin : cb_ready_plugins) {
+			plugin->renderCallback(model, data, scene);
+		}
 	}
 }
 
