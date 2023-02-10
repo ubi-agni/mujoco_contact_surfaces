@@ -53,7 +53,7 @@ bool TactileSensorBase::load(mjModelPtr m, mjDataPtr d)
 			publisher              = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1, true);
 			std::string sensorName = static_cast<std::string>(rosparam_config_["sensorName"]);
 			updateRate             = static_cast<double>(rosparam_config_["updateRate"]);
-			ros::Duration updatePeriod(1.0 / updateRate);
+			updatePeriod           = ros::Duration(1.0 / updateRate);
 			if (rosparam_config_.hasMember("visualize")) {
 				visualize = static_cast<bool>(rosparam_config_["visualize"]);
 			}
@@ -66,9 +66,9 @@ bool TactileSensorBase::load(mjModelPtr m, mjDataPtr d)
 void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions)
 {
 	auto now = ros::Time::now();
-	if (now < lastUpdate) // reset lastUpdate after jump back in time
+	if (now < lastUpdate) { // reset lastUpdate after jump back in time
 		lastUpdate = ros::Time();
-
+	}
 	// if enough time has passed do a sensor update
 	if (now - lastUpdate >= updatePeriod) {
 		lastUpdate = now;

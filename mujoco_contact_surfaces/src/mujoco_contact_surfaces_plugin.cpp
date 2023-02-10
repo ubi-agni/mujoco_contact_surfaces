@@ -300,7 +300,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
 		}
-		GeomCollision *gc = new GeomCollision(g1, g2, *s.get());
+		GeomCollision *gc = new GeomCollision(g1, g2, s.release());
 		evaluateContactSurface(m, d, gc);
 		geomCollisions.push_back(gc);
 	}
@@ -310,7 +310,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 
 void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc)
 {
-	ContactSurface<double> *s = &gc->s;
+	std::shared_ptr<ContactSurface<double>> s = gc->s;
 	int g1                    = gc->g1;
 	int g2                    = gc->g2;
 	ContactProperties *cp1    = contactProperties[g1];
@@ -394,9 +394,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
-	for (const auto &plugin : cb_ready_plugins) {
-		plugin->update(m, d, geomCollisions);
-	}
+	
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
 		n_vGeom       = 0;
@@ -492,13 +490,16 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			// visualize
 			if (visualizeContactSurfaces) {
 				current_scale = std::max(current_scale, std::abs(fn));
-				if (gc->s.is_triangle()) {
-					visualizeMeshElement(pc.face, gc->s.tri_mesh_W(), fn);
+				if (gc->s->is_triangle()) {
+					visualizeMeshElement(pc.face, gc->s->tri_mesh_W(), fn);
 				} else {
-					visualizeMeshElement(pc.face, gc->s.poly_mesh_W(), fn);
+					visualizeMeshElement(pc.face, gc->s->poly_mesh_W(), fn);
 				}
 			}
 		}
+	}
+	for (const auto &plugin : cb_ready_plugins) {
+		plugin->update(m, d, geomCollisions);
 	}
 	geomCollisions.clear();
 }

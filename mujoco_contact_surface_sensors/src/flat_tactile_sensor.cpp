@@ -95,8 +95,8 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 
 	for (GeomCollision *gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
-			ContactSurface<double> s = gc->s;
-			auto mesh                = s.tri_mesh_W();
+			std::shared_ptr<ContactSurface<double>> s = gc->s;
+			auto mesh                = s->tri_mesh_W();
 
 			// prepare caches
 			const int n = mesh.num_elements();
@@ -129,7 +129,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 							int y = (int)std::floor(p[1] / res);
 							// barys[x][y].push_back(bary);
 							// tris[x][y].push_back(t);
-							pressure[x][y].push_back(s.tri_e_MN().Evaluate(t, bary) * s.area(t));
+							pressure[x][y].push_back(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
 						}
 					}
 				}
@@ -150,16 +150,17 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 
 				double p0                                        = mp / nt;
 				tactile_state_msg_.sensors[0].values[x * cx + y] = p0;
+				if (visualize) {
+					tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
+					float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
 
-				tactile_current_scale = std::max(std::abs(p0), tactile_current_scale);
-				float ps              = std::min(std::abs(p0), tactile_running_scale) / tactile_running_scale;
+					const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
+					Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
+					mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
 
-				const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
-				Eigen::Vector4d dp  = Mback * Eigen::Vector4d(x * res + res / 2, y * res + res / 2, 0, 1);
-				mjtNum pos[3]       = { dp[0], dp[1], dp[2] };
-
-				mjvGeom *g = vGeoms + n_vGeom++;
-				mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+					mjvGeom *g = vGeoms + n_vGeom++;
+					mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+				}
 			} else {
 				tactile_state_msg_.sensors[0].values[x * cx + y] = 0;
 			}

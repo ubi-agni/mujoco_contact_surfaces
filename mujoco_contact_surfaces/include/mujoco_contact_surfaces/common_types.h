@@ -57,10 +57,10 @@ typedef struct PointCollision
 typedef struct GeomCollision
 {
 	std::vector<PointCollision> pointCollisions;
-	drake::geometry::ContactSurface<double> s;
+	std::shared_ptr<drake::geometry::ContactSurface<double>>s;
 	int g1;
 	int g2;
-	GeomCollision(int g1, int g2, drake::geometry::ContactSurface<double> s) : g1(g1), g2(g2), s(s){};
+	GeomCollision(int g1, int g2, drake::geometry::ContactSurface<double> *s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
 
 

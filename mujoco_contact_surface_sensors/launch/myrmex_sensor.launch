@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="verbose" default="true" doc="Should more debug output be printed?" />
+  <arg name="verbose" default="false" doc="Should more debug output be printed?" />
   <arg name="unpause" default="false" doc="Should the simulation be unpaused on start?" />
   <arg name="headless" default="false" doc="Should the simulation be rendered." />
   <arg name="num_sim_steps" default="-1"
