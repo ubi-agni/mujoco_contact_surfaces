@@ -32,6 +32,7 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/tactile_sensor_base.cpp
   src/flat_tactile_sensor.cpp
+  src/taxel_sensor.cpp
 )
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   include

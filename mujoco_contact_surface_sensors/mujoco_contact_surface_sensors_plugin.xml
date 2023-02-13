@@ -4,7 +4,15 @@
     type="mujoco_contact_surface_sensors::FlatTactileSensor"
     base_class_type="mujoco_contact_surfaces::SurfacePlugin">
     <description>
-      Mujoco plugin that allows to replace the default point contacts of mujoco with contact surfaces.
+      Flat contact sensor based on mujoco contact surfaces.
+    </description>
+  </class>
+  <class
+    name="mujoco_contact_surface_sensors/TaxelSensor"
+    type="mujoco_contact_surface_sensors::TaxelSensor"
+    base_class_type="mujoco_contact_surfaces::SurfacePlugin">
+    <description>
+      Taxel contact sensor based on mujoco contact surfaces.
     </description>
   </class>
 </library>

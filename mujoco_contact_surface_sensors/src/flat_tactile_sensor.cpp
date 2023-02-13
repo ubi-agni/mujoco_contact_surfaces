@@ -83,8 +83,9 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 
 	Minv = M.inverse();
 	Minv.col(3) << Minv.col(3) + Eigen::Vector4d(xs, ys, -zs, 0);
-
-	Mback = Minv.inverse();
+	if (visualize) {
+		Mback = Minv.inverse();
+	}
 	std::vector<double> pressure[cx][cy];
 
 	mjtNum size[3] = { res / 2, res / 2, 0.001 };
@@ -96,7 +97,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 	for (GeomCollision *gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			std::shared_ptr<ContactSurface<double>> s = gc->s;
-			auto mesh                = s->tri_mesh_W();
+			auto mesh                                 = s->tri_mesh_W();
 
 			// prepare caches
 			const int n = mesh.num_elements();
