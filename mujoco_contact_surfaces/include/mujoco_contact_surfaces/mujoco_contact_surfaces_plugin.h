@@ -127,7 +127,6 @@ using namespace drake::multibody::internal;
 using namespace MujocoSim;
 using namespace std::chrono;
 
-const int MAX_VGEOM      = 10000;
 const std::string PREFIX = "cs::";
 
 typedef enum _contactType

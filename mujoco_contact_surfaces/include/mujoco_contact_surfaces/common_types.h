@@ -39,8 +39,10 @@
 #include <drake/geometry/query_results/contact_surface.h>
 #include <mujoco_ros/common_types.h>
 
-
 namespace mujoco_contact_surfaces {
+
+// Maximum number of geoms for visualization
+const int MAX_VGEOM = 10000;
 
 // Point collision that approximates a collision area
 typedef struct PointCollision
@@ -57,12 +59,11 @@ typedef struct PointCollision
 typedef struct GeomCollision
 {
 	std::vector<PointCollision> pointCollisions;
-	std::shared_ptr<drake::geometry::ContactSurface<double>>s;
+	std::shared_ptr<drake::geometry::ContactSurface<double>> s;
 	int g1;
 	int g2;
 	GeomCollision(int g1, int g2, drake::geometry::ContactSurface<double> *s) : g1(g1), g2(g2), s(s){};
 } GeomCollision;
-
 
 // SurfacePlugin
 class SurfacePlugin;

@@ -81,7 +81,7 @@ protected:
 	// geom buffer used for visualization
 	mjvGeom *vGeoms;
 	// number of geoms in vGeoms
-	int n_vGeom;
+	int n_vGeom = 0;
 
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions){};
 

@@ -230,7 +230,8 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	// Parse, register and load plugins
 	XmlRpc::XmlRpcValue plugin_config;
 	if (mujoco_contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader, plugin_config)) {
-		mujoco_contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader, plugins);
+		mujoco_contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader,
+		                                                       plugins);
 	}
 	for (const auto &plugin : plugins) {
 		if (plugin->safe_load(m, d)) {
@@ -311,11 +312,11 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc)
 {
 	std::shared_ptr<ContactSurface<double>> s = gc->s;
-	int g1                    = gc->g1;
-	int g2                    = gc->g2;
-	ContactProperties *cp1    = contactProperties[g1];
-	ContactProperties *cp2    = contactProperties[g2];
-	const double dissipation  = calcCombinedDissipation(cp1, cp2);
+	int g1                                    = gc->g1;
+	int g2                                    = gc->g2;
+	ContactProperties *cp1                    = contactProperties[g1];
+	ContactProperties *cp2                    = contactProperties[g2];
+	const double dissipation                  = calcCombinedDissipation(cp1, cp2);
 	// const double stiction_tolerance = 1.0e-4;
 	// const double relative_tolerance = 1.0e-2;
 	for (int face = 0; face < s->num_faces(); ++face) {
@@ -394,7 +395,6 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
-	
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
 		n_vGeom       = 0;
@@ -771,10 +771,9 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 		for (int i = 0; i < n; ++i) {
 			scene->geoms[scene->ngeom++] = vGeoms[i];
 		}
-		n_vGeom = 0;
-		for (const auto &plugin : cb_ready_plugins) {
-			plugin->renderCallback(model, data, scene);
-		}
+	}
+	for (const auto &plugin : cb_ready_plugins) {
+		plugin->renderCallback(model, data, scene);
 	}
 }
 

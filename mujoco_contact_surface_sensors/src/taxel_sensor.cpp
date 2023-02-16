@@ -58,7 +58,10 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 		}
 		auto taxel_array = rosparam_config_["taxels"];
 		if (taxel_array.getType() == XmlRpc::XmlRpcValue::TypeArray && taxel_array.size() > 0) {
-			int n     = taxel_array.size();
+			int n = taxel_array.size();
+			if (visualize) {
+				vGeoms = new mjvGeom[mujoco_contact_surfaces::MAX_VGEOM];
+			}
 			taxel_mat = Eigen::Matrix<double, 4, Eigen::Dynamic>(4, n);
 
 			for (int i = 0; i < n; ++i) {
@@ -138,6 +141,13 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 	int m = spoints.size();
 	int n = taxels.size();
 
+	const float red[4]  = { 1, 0, 0, 1 };
+	const float blue[4] = { 0, 0, 1, 1 };
+	mjtNum size[3]      = { 0.001, 0.001, 0.01 };
+	mjtNum sizeS[3]     = { 0.001, 0.001, 0.001 };
+	mjtNum pos[3], posS[3];
+	mjtNum rot[9];
+
 	if (m > 0) {
 		// Compute taxel positions at the current sensor geom position
 		Eigen::Matrix4d M;
@@ -152,6 +162,9 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 		Eigen::Matrix<double, 3, Eigen::Dynamic> surface_points(3, m);
 		for (int i = 0; i < m; ++i) {
 			surface_points.col(i) << spoints[i];
+			for (int h = 0; h < 3; ++h) {
+				posS[h] = surface_points(h, i);
+			}
 		}
 		// Compute distance matrix between taxel positions and surface points
 		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> dist(n, m);
@@ -162,17 +175,45 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 
 		switch (method) {
 			case CLOSEST:
-				// Compute index of closest surface point for each taxel
-				Eigen::VectorXd idx(n);
-				idx = dist.colwise().minCoeff();
+
 				for (int i = 0; i < n; ++i) {
-					int j = int(idx(i));
+					int j;
+					// for each taxel find index of closest surface point
+					double distance                           = dist.row(i).minCoeff(&j);
+					std::shared_ptr<ContactSurface<double>> s = surfaces[j];
+					int t                                     = ts[j];
+					Vector3<double> bary                      = barys[j];
+
+					if (visualize) {
+						Vector3<double> normal = s->face_normal(t);
+
+						for (int h = 0; h < 3; ++h) {
+							pos[h]  = taxels_at_M3(h, i);
+							posS[h] = surface_points(h, j);
+							0;
+							rot[h + 6] = normal[h];
+							rot[h + 3] = s->centroid(t)[h] - pos[h];
+						}
+						mju_normalize3(rot + 3);
+						mju_cross(rot, rot + 3, rot + 6);
+						mju_normalize3(rot);
+						mjvGeom *g = vGeoms + n_vGeom++;
+						mjv_initGeom(g, mjGEOM_SPHERE, sizeS, pos, NULL, red);
+					}
+
 					// If computed closest surface point is in margin, compute pressure at that point
-					if (dist(i, j) < include_margin) {
-						std::shared_ptr<ContactSurface<double>> s = surfaces[i];
-						int t                                     = ts[i];
-						Vector3<double> bary                      = barys[i];
-						tactile_state_msg_.sensors[0].values[i]   = s->tri_e_MN().Evaluate(t, bary) * s->area(t);
+					if (distance < include_margin) {
+						double pressure                         = s->tri_e_MN().Evaluate(t, bary) * s->area(t);
+						tactile_state_msg_.sensors[0].values[i] = pressure;
+						if (visualize && std::abs(pressure) > 1e-6) {
+							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
+							size[2]    = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
+							mjvGeom *g = vGeoms + n_vGeom++;
+							mjv_initGeom(g, mjGEOM_ARROW, size, pos, rot, red);
+							mjvGeom *gS = vGeoms + n_vGeom++;
+							mjv_initGeom(gS, mjGEOM_SPHERE, sizeS, posS, NULL, blue);
+						}
+
 					} else {
 						tactile_state_msg_.sensors[0].values[i] = 0;
 					}
