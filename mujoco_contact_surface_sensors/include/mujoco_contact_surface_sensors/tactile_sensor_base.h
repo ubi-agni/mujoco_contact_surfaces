@@ -62,8 +62,8 @@ private:
 protected:
 	// MuJoCo id of the geom this sensor is attached to
 	int geomID;
-    // Name of the geom this sensor is attached to
-    std::string geomName;
+	// Name of the geom this sensor is attached to
+	std::string geomName;
 
 	// update frequency of the sensor
 	double updateRate;
@@ -73,16 +73,17 @@ protected:
 
 	// ros publisher for sensor data
 	ros::Publisher publisher;
-    tactile_msgs::TactileState tactile_state_msg_;
+	tactile_msgs::TactileState tactile_state_msg_;
 	std::string topicName;
-    std::string sensorName;
+	std::string sensorName;
 
 	bool visualize = false;
 	// geom buffer used for visualization
 	mjvGeom *vGeoms;
 	// number of geoms in vGeoms
 	int n_vGeom = 0;
-
+	bool initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9],
+	                       const float rgba[4]);
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions){};
 
 private:

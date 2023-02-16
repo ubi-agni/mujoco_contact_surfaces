@@ -87,6 +87,9 @@ void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<Ge
 void TactileSensorBase::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
 {
 	if (visualize) {
+		ROS_WARN_STREAM_COND_NAMED(
+		    scene->maxgeom < n_vGeom, "mujoco_contact_surface_sensors",
+		    "Not all vgeoms could be visualized: n_vGeom = " << n_vGeom << " scene->maxgeom = " << scene->maxgeom);
 		for (int i = 0; i < n_vGeom && scene->ngeom < scene->maxgeom; ++i) {
 			scene->geoms[scene->ngeom++] = vGeoms[i];
 		}
@@ -95,4 +98,14 @@ void TactileSensorBase::renderCallback(mjModelPtr model, mjDataPtr data, mjvScen
 
 void TactileSensorBase::reset() {}
 
+bool TactileSensorBase::initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9],
+                                  const float rgba[4])
+{
+	if (n_vGeom < mujoco_contact_surfaces::MAX_VGEOM) {
+		mjvGeom *g = vGeoms + n_vGeom++;
+		mjv_initGeom(g, type, size, pos, mat, rgba);
+		return true;
+	}
+	return false;
+}
 } // namespace mujoco_contact_surface_sensors

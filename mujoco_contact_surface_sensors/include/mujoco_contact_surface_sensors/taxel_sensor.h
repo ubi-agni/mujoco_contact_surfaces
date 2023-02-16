@@ -73,7 +73,8 @@ using namespace mujoco_contact_surfaces;
 enum TaxelMethod
 {
 	// For each taxel find the closest point sampled on the contact surface and compute pressure value at that point
-	CLOSEST
+	CLOSEST,
+	WEIGHTED
 };
 
 class TaxelSensor : public TactileSensorBase

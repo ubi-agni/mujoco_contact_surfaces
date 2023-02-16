@@ -51,6 +51,8 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 		const std::string method_string = static_cast<std::string>(rosparam_config_["method"]);
 		if (method_string == "closest") {
 			method = CLOSEST;
+		} else if (method_string == "weighted") {
+			method = WEIGHTED;
 		} else {
 			ROS_ERROR_STREAM_NAMED("mujoco_contact_surface_sensors",
 			                       "Could not find any match for method: " << method_string);
@@ -188,17 +190,19 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 						Vector3<double> normal = s->face_normal(t);
 
 						for (int h = 0; h < 3; ++h) {
-							pos[h]  = taxels_at_M3(h, i);
-							posS[h] = surface_points(h, j);
-							0;
+							pos[h]     = taxels_at_M3(h, i);
+							posS[h]    = surface_points(h, j);
 							rot[h + 6] = normal[h];
-							rot[h + 3] = s->centroid(t)[h] - pos[h];
+							rot[h + 3] = 0; // s->centroid(t)[h] - pos[h];
 						}
-						mju_normalize3(rot + 3);
+						// mju_normalize3(rot + 3);
+						if (normal[0] > 0.95) {
+							rot[4] = 1;
+						} else {
+							rot[3] = 1;
+						}
 						mju_cross(rot, rot + 3, rot + 6);
-						mju_normalize3(rot);
-						mjvGeom *g = vGeoms + n_vGeom++;
-						mjv_initGeom(g, mjGEOM_SPHERE, sizeS, pos, NULL, red);
+						initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
 					}
 
 					// If computed closest surface point is in margin, compute pressure at that point
@@ -207,11 +211,9 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 						tactile_state_msg_.sensors[0].values[i] = pressure;
 						if (visualize && std::abs(pressure) > 1e-6) {
 							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
-							size[2]    = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
-							mjvGeom *g = vGeoms + n_vGeom++;
-							mjv_initGeom(g, mjGEOM_ARROW, size, pos, rot, red);
-							mjvGeom *gS = vGeoms + n_vGeom++;
-							mjv_initGeom(gS, mjGEOM_SPHERE, sizeS, posS, NULL, blue);
+							size[2] = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
+							initVGeom(mjGEOM_ARROW, size, pos, rot, red);
+							initVGeom(mjGEOM_SPHERE, sizeS, posS, NULL, blue);
 						}
 
 					} else {
@@ -219,6 +221,60 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 					}
 				}
 				break;
+			case WEIGHTED:
+				for (int i = 0; i < n; ++i) {
+					double ws       = 0;
+					double pressure = 0;
+					Vector3<double> normal(0, 0, 0);
+
+					if (visualize) {
+						for (int h = 0; h < 3; ++h) {
+							pos[h] = taxels_at_M3(h, i);
+						}
+						initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
+					}
+
+					for (int j = 0; j < m; ++j) {
+						if (dist(i, j) < include_margin) {
+							std::shared_ptr<ContactSurface<double>> s = surfaces[j];
+							int t                                     = ts[j];
+							Vector3<double> bary                      = barys[j];
+							double w                                  = include_margin - dist(i, j);
+							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
+							pressure += p;
+							ws += w;
+							if (visualize) {
+								normal += p * s->face_normal(t);
+								for (int h = 0; h < 3; ++h) {
+									posS[h] = surface_points(h, j);
+								}
+								initVGeom(mjGEOM_SPHERE, sizeS, posS, NULL, blue);
+							}
+						}
+					}
+					if (ws > 0) {
+						// normal /= pressure;
+						pressure /= ws;
+						tactile_state_msg_.sensors[0].values[i] = pressure;
+						if (visualize) {
+							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
+							size[2] = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
+							for (int h = 0; h < 3; ++h) {
+								pos[h]     = taxels_at_M3(h, i);
+								rot[h + 6] = normal[h];
+								rot[h + 3] = 0;
+							}
+							if (normal[0] > 0.95) {
+								rot[4] = 1;
+							} else {
+								rot[3] = 1;
+							}
+							mju_normalize3(rot + 6);
+							mju_cross(rot, rot + 3, rot + 6);
+							initVGeom(mjGEOM_ARROW, size, pos, rot, red);
+						}
+					}
+				}
 		}
 	} else {
 		// If there are no sampled points on the surface fill the sensor message with zeros

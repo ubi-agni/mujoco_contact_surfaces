@@ -9,7 +9,7 @@ MujocoPlugins:
           updateRate: 50.0,
           visualize: True,
           include_margin: 0.00016044444444444426,
-          method: "closest",
+          method: "weighted",
           sample_resolution: 0.01,
           taxels:
             [
