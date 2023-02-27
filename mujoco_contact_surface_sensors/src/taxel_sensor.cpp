@@ -46,7 +46,8 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("taxels") && rosparam_config_.hasMember("method") &&
 	    rosparam_config_.hasMember("include_margin") && rosparam_config_.hasMember("sample_resolution")) {
-		include_margin                  = static_cast<double>(rosparam_config_["include_margin"]);
+		include_margin_sq = static_cast<double>(rosparam_config_["include_margin"]);
+		include_margin_sq *= include_margin_sq;
 		sample_resolution               = static_cast<double>(rosparam_config_["sample_resolution"]);
 		const std::string method_string = static_cast<std::string>(rosparam_config_["method"]);
 		if (method_string == "closest") {
@@ -206,7 +207,7 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 					}
 
 					// If computed closest surface point is in margin, compute pressure at that point
-					if (distance < include_margin) {
+					if (distance < include_margin_sq) {
 						double pressure                         = s->tri_e_MN().Evaluate(t, bary) * s->area(t);
 						tactile_state_msg_.sensors[0].values[i] = pressure;
 						if (visualize && std::abs(pressure) > 1e-6) {
@@ -235,11 +236,11 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 					}
 
 					for (int j = 0; j < m; ++j) {
-						if (dist(i, j) < include_margin) {
+						if (dist(i, j) < include_margin_sq) {
 							std::shared_ptr<ContactSurface<double>> s = surfaces[j];
 							int t                                     = ts[j];
 							Vector3<double> bary                      = barys[j];
-							double w                                  = include_margin - dist(i, j);
+							double w                                  = include_margin_sq - dist(i, j);
 							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
 							pressure += p;
 							ws += w;

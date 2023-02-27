@@ -92,7 +92,7 @@ private:
 	Eigen::Matrix<double, 4, Eigen::Dynamic> taxel_mat;
 	// Distance margin: Determines how far away surface points can be to a taxel position to still be included in the
 	// sensor value computation
-	double include_margin;
+	double include_margin_sq;
 	// Resolution on how dense points are sampled on the contact surface
 	double sample_resolution;
 	// Method to compute sensor values

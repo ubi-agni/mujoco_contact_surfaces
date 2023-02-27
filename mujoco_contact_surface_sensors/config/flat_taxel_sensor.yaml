@@ -8,7 +8,7 @@ MujocoPlugins:
           topicName: "/tactile_module_16x16_v2",
           updateRate: 50.0,
           visualize: True,
-          include_margin: 0.00016044444444444426,
+          include_margin: 0.01266666666666666,
           method: "weighted",
           sample_resolution: 0.01,
           taxels:
