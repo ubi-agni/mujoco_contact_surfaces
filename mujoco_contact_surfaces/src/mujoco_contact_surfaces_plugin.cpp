@@ -301,7 +301,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
 		}
-		GeomCollision *gc = new GeomCollision(g1, g2, s.release());
+		GeomCollisionPtr gc(new GeomCollision(g1, g2, s.release()));
 		evaluateContactSurface(m, d, gc);
 		geomCollisions.push_back(gc);
 	}
@@ -309,7 +309,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 	return 0;
 }
 
-void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc)
+void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollisionPtr gc)
 {
 	std::shared_ptr<ContactSurface<double>> s = gc->s;
 	int g1                                    = gc->g1;
@@ -404,7 +404,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
 	const double relative_tolerance = 1.0e-2;
-	for (GeomCollision *gc : geomCollisions) {
+	for (GeomCollisionPtr gc : geomCollisions) {
 		int g1                 = gc->g1;
 		int g2                 = gc->g2;
 		ContactProperties *cp1 = contactProperties[g1];

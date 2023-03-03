@@ -73,5 +73,6 @@ class SurfacePlugin;
  * @brief boost::shared_ptr to SurfacePlugin
  */
 typedef boost::shared_ptr<SurfacePlugin> SurfacePluginPtr;
+typedef boost::shared_ptr<GeomCollision> GeomCollisionPtr;
 
 } // namespace mujoco_contact_surfaces

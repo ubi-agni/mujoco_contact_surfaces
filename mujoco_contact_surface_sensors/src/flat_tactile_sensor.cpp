@@ -63,7 +63,8 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 	return false;
 }
 
-void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions)
+void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
+                                        const std::vector<GeomCollisionPtr> &geomCollisions)
 {
 	if (visualize) {
 		// reset the visualized geoms
@@ -94,7 +95,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d, const std::
 		rot[i] = d->geom_xmat[9 * id + i];
 	}
 
-	for (GeomCollision *gc : geomCollisions) {
+	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			std::shared_ptr<ContactSurface<double>> s = gc->s;
 			auto mesh                                 = s->tri_mesh_W();

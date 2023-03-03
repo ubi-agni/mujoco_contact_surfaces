@@ -93,7 +93,7 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 }
 
 void TaxelSensor::internal_update(const mjModel *model, mjData *data,
-                                  const std::vector<GeomCollision *> &geomCollisions)
+                                  const std::vector<GeomCollisionPtr> &geomCollisions)
 {
 	if (visualize) {
 		// reset the visualized geoms
@@ -107,7 +107,7 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 	std::vector<Vector3<double>> barys, spoints;
 	std::vector<std::shared_ptr<ContactSurface<double>>> surfaces;
 
-	for (GeomCollision *gc : geomCollisions) {
+	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			std::shared_ptr<ContactSurface<double>> s = gc->s;
 			auto mesh                                 = s->tri_mesh_W();

@@ -49,7 +49,7 @@ class TactileSensorBase : public SurfacePlugin
 public:
 	// Overlead entry point
 	virtual bool load(mjModelPtr m, mjDataPtr d);
-	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions);
+	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
 	virtual void reset();
 
@@ -82,9 +82,8 @@ protected:
 	mjvGeom *vGeoms;
 	// number of geoms in vGeoms
 	int n_vGeom = 0;
-	bool initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9],
-	                       const float rgba[4]);
-	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions){};
+	bool initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9], const float rgba[4]);
+	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions){};
 
 private:
 };

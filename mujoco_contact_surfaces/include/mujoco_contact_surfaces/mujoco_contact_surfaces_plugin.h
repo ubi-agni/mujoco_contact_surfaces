@@ -221,7 +221,7 @@ protected:
 	mjModelPtr m_;
 	mjDataPtr d_;
 	bool visualizeContactSurfaces = false;
-	std::vector<GeomCollision *> geomCollisions;
+	std::vector<GeomCollisionPtr> geomCollisions;
 
 private:
 	// Buffer of visual geoms
@@ -239,7 +239,7 @@ private:
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
 
-	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollision *gc);
+	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollisionPtr gc);
 	template <class T>
 	void visualizeMeshElement(int face, T mesh, double fn);
 

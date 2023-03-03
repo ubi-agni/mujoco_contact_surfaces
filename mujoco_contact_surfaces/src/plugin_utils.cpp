@@ -38,9 +38,10 @@
 
 namespace mujoco_contact_surfaces::plugin_utils {
 
-bool parsePlugins(const XmlRpc::XmlRpcValue &config, boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_, XmlRpc::XmlRpcValue &plugin_config_rpc)
+bool parsePlugins(const XmlRpc::XmlRpcValue &config,
+                  boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
+                  XmlRpc::XmlRpcValue &plugin_config_rpc)
 {
-
 	if (config.hasMember(SURFACE_PLUGIN_PARAM_NAME)) {
 		ROS_DEBUG_STREAM_NAMED("surface_plugin_loader", "Found SurfacePlugins param under " << SURFACE_PLUGIN_PARAM_NAME);
 	} else {
@@ -51,41 +52,50 @@ bool parsePlugins(const XmlRpc::XmlRpcValue &config, boost::shared_ptr<pluginlib
 	plugin_config_rpc = config[SURFACE_PLUGIN_PARAM_NAME];
 
 	if (plugin_config_rpc.getType() != XmlRpc::XmlRpcValue::TypeArray) {
-		ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader", "Error while parsing SurfacePlugins rosparam: wrong type.");
-		ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader", "SurfacePlugins rosparam should be of type '"
-		                                                       << XmlRpc::XmlRpcValue::TypeArray << "', but got type '"
-		                                                       << plugin_config_rpc.getType() << "' (yaml array)!");
+		ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
+		                       "Error while parsing SurfacePlugins rosparam: wrong type.");
+		ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
+		                       "SurfacePlugins rosparam should be of type '"
+		                           << XmlRpc::XmlRpcValue::TypeArray << "', but got type '" << plugin_config_rpc.getType()
+		                           << "' (yaml array)!");
 		return false;
 	} else {
 		ROS_DEBUG_NAMED("mujoco_contact_surfaces_plugin_loader", "Initializing plugin loader ... ");
-		plugin_loader_ptr_.reset(new pluginlib::ClassLoader<SurfacePlugin>("mujoco_contact_surfaces", "mujoco_contact_surfaces::SurfacePlugin"));
+		plugin_loader_ptr_.reset(new pluginlib::ClassLoader<SurfacePlugin>("mujoco_contact_surfaces",
+		                                                                   "mujoco_contact_surfaces::SurfacePlugin"));
 	}
 	return true;
 }
 
-void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc, boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_, std::vector<SurfacePluginPtr> &plugins)
+void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
+                     boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
+                     std::vector<SurfacePluginPtr> &plugins)
 {
 	for (uint i = 0; i < config_rpc.size(); i++) {
 		if (config_rpc[i].getType() != XmlRpc::XmlRpcValue::TypeStruct) {
-			ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader", "Error while parsing SurfacePlugins rosparam: wrong type.");
-			ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader", "Children of 'SurfacePlugins' should be of type '"
-			                                                       << XmlRpc::XmlRpcValue::TypeStruct
-			                                                       << "', but got type '" << config_rpc.getType()
-			                                                       << "'. Skipping " << config_rpc[i]);
+			ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
+			                       "Error while parsing SurfacePlugins rosparam: wrong type.");
+			ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
+			                       "Children of 'SurfacePlugins' should be of type '"
+			                           << XmlRpc::XmlRpcValue::TypeStruct << "', but got type '" << config_rpc.getType()
+			                           << "'. Skipping " << config_rpc[i]);
 			continue;
 		}
 		registerPlugin(nh, config_rpc[i], plugin_loader_ptr_, plugins);
 	}
 }
 
-bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config, boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_, std::vector<SurfacePluginPtr> &plugins)
+bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config,
+                    boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
+                    std::vector<SurfacePluginPtr> &plugins)
 {
 	ROS_ASSERT(config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 	std::string type;
 
 	if (!config.hasMember("type")) {
-		ROS_ERROR_NAMED("mujoco_contact_surfaces_plugin_loader", "Error while parsing SurfacePlugins rosparam: Every listed plugin "
-		                                            "should provide a 'type' member!");
+		ROS_ERROR_NAMED("mujoco_contact_surfaces_plugin_loader",
+		                "Error while parsing SurfacePlugins rosparam: Every listed plugin "
+		                "should provide a 'type' member!");
 		return false;
 	}
 	type = (std::string)config["type"];

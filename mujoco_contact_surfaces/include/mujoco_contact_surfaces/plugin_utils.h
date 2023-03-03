@@ -91,7 +91,7 @@ public:
 	 * @param[in] data pointer to mjData.
 	 * @param[in] geomCollisions collisions between geoms.
 	 */
-	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions){};
+	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions){};
 
 	/**
 	 * @brief Override this callback to add custom visualisations to the scene.

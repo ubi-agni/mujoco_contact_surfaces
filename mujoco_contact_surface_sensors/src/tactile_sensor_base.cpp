@@ -63,7 +63,7 @@ bool TactileSensorBase::load(mjModelPtr m, mjDataPtr d)
 	return false;
 }
 
-void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions)
+void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions)
 {
 	auto now = ros::Time::now();
 	if (now < lastUpdate) { // reset lastUpdate after jump back in time

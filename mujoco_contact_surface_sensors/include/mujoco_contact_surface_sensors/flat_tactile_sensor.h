@@ -47,7 +47,7 @@ public:
 	virtual bool load(mjModelPtr m, mjDataPtr d);
 
 protected:
-	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollision *> &geomCollisions);
+	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
 private:
 	double resolution;
