@@ -699,8 +699,8 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 							if (geom_dataid >= 0) {
 								int nv    = m->mesh_vertnum[geom_dataid];
 								int nf    = m->mesh_facenum[geom_dataid];
-								int v_adr = m->mesh_vertadr[geom_dataid];
-								int f_adr = m->mesh_faceadr[geom_dataid];
+								int v_adr = 3 * m->mesh_vertadr[geom_dataid];
+								int f_adr = 3 * m->mesh_faceadr[geom_dataid];
 								if (nv > 0 && nf > 0 && v_adr >= 0 && f_adr >= 0) {
 									std::vector<SurfaceTriangle> triangles;
 									std::vector<Vector3<double>> vertices;
