@@ -221,6 +221,7 @@ protected:
 	mjModelPtr m_;
 	mjDataPtr d_;
 	bool visualizeContactSurfaces = false;
+	bool applyContactSurfaceForces = true;
 	std::vector<GeomCollisionPtr> geomCollisions;
 
 private:

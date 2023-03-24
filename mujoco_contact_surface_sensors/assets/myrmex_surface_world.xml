@@ -22,6 +22,8 @@
     <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
     <text name="cs::HydroelasticContactRepresentation" data="kTriangle"/>
     <numeric name="cs::VisualizeSurfaces" data="0"/>
+    <!-- If cs::ApplyContactSurfaceForces is 0 Contact Surfaces are only computed for tactile sensors and standard mujoco contacts are used to compute physics -->
+    <numeric name="cs::ApplyContactSurfaceForces" data="1"/>
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->

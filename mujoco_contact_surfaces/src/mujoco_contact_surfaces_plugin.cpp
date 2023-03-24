@@ -219,13 +219,13 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	std::string robot_namespace_ = node_handle_->getNamespace();
 	ROS_ASSERT(rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+	parseMujocoCustomFields(m.get());
 	d_                    = d;
 	m_                    = m;
 	instance_map[d.get()] = this;
 	if (instance_map.size() == 1) {
 		initCollisionFunction();
 	}
-	parseMujocoCustomFields(m.get());
 
 	// Parse, register and load plugins
 	XmlRpc::XmlRpcValue plugin_config;
@@ -272,6 +272,8 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 	}
 
+	int n_con = applyContactSurfaceForces ? 0 : defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
+
 	std::unique_ptr<ContactSurface<double>> s;
 	if (cp1->contact_type == SOFT and cp2->contact_type == SOFT) {
 		RigidTransform<double> p1 = getGeomPose(g1, d);
@@ -305,8 +307,7 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		evaluateContactSurface(m, d, gc);
 		geomCollisions.push_back(gc);
 	}
-
-	return 0;
+	return n_con;
 }
 
 void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollisionPtr gc)
@@ -442,27 +443,30 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 			const double fn = std::max(0., 1. - pc.damping * vn_BqAq_W) * (pc.fn0 - 0.001 * pc.stiffness * vn_BqAq_W);
 
-			const Vector3<double> vt   = v_BqAq_W - pc.n * vn_BqAq_W;
-			double epsilon             = stiction_tolerance * relative_tolerance;
-			epsilon                    = epsilon * epsilon;
-			const double v_slip        = std::sqrt(vt.squaredNorm() + epsilon);
-			const Vector3<double> that = vt / v_slip;
-			double mu_regularized      = mu_coulomb;
-			const double s             = v_slip / stiction_tolerance;
-			if (s < 1) {
-				mu_regularized = mu_coulomb * s * (2.0 - s);
+
+			if (applyContactSurfaceForces) {
+				const Vector3<double> vt   = v_BqAq_W - pc.n * vn_BqAq_W;
+				double epsilon             = stiction_tolerance * relative_tolerance;
+				epsilon                    = epsilon * epsilon;
+				const double v_slip        = std::sqrt(vt.squaredNorm() + epsilon);
+				const Vector3<double> that = vt / v_slip;
+				double mu_regularized      = mu_coulomb;
+				const double s             = v_slip / stiction_tolerance;
+				if (s < 1) {
+					mu_regularized = mu_coulomb * s * (2.0 - s);
+				}
+
+				const Vector3<double> f_slip = -mu_regularized * that * fn;
+
+				const Vector3<double> f = f_slip + fn * pc.n;
+
+				const mjtNum point[3]  = { pc.p[0], pc.p[1], pc.p[2] };
+				const mjtNum torque[3] = { 0, 0, 0 };
+				const mjtNum forceA[3] = { f[0], f[1], f[2] };
+				const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
+				mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
+				mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
 			}
-
-			const Vector3<double> f_slip = -mu_regularized * that * fn;
-
-			const Vector3<double> f = f_slip + fn * pc.n;
-
-			const mjtNum point[3]  = { pc.p[0], pc.p[1], pc.p[2] };
-			const mjtNum torque[3] = { 0, 0, 0 };
-			const mjtNum forceA[3] = { f[0], f[1], f[2] };
-			const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
-			mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
-			mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
 
 			// visualize collision force:
 			// int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
@@ -582,6 +586,16 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 			visualizeContactSurfaces = m->numeric_data[vs_adr];
 		}
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "VisualizeContactSurfaces: " << visualizeContactSurfaces);
+	}
+	// parse ApplyContactSurfaceForces
+	int apsf_id = mj_name2id(m, mjOBJ_NUMERIC, (PREFIX + "ApplyContactSurfaceForces").c_str());
+	if (apsf_id >= 0) {
+		int apsf_adr  = m->numeric_adr[apsf_id];
+		int apsf_size = m->numeric_size[apsf_adr];
+		if (apsf_size == 1) {
+			applyContactSurfaceForces = m->numeric_data[apsf_adr];
+		}
+		ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "ApplyContactSurfaceForces: " << applyContactSurfaceForces);
 	}
 	// parse geom contact properties
 	for (int i = 0; i < m->nnumeric; ++i) {
