@@ -131,7 +131,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 							int y = (int)std::floor(p[1] / res);
 							// barys[x][y].push_back(bary);
 							// tris[x][y].push_back(t);
-							pressure[x][y].push_back(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
+							pressure[x][y].push_back(s->tri_e_MN().Evaluate(t, bary));
 						}
 					}
 				}

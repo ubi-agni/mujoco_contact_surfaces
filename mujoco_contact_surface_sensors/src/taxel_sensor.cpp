@@ -208,7 +208,7 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 
 					// If computed closest surface point is in margin, compute pressure at that point
 					if (distance < include_margin_sq) {
-						double pressure                         = s->tri_e_MN().Evaluate(t, bary) * s->area(t);
+						double pressure                         = s->tri_e_MN().Evaluate(t, bary);
 						tactile_state_msg_.sensors[0].values[i] = pressure;
 						if (visualize && std::abs(pressure) > 1e-6) {
 							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
@@ -241,7 +241,7 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 							int t                                     = ts[j];
 							Vector3<double> bary                      = barys[j];
 							double w                                  = include_margin_sq - dist(i, j);
-							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
+							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary));
 							pressure += p;
 							ws += w;
 							if (visualize) {
