@@ -243,6 +243,8 @@ private:
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollisionPtr gc);
 	template <class T>
 	void visualizeMeshElement(int face, T mesh, double fn);
+	void makeContact(const mjModel *m, mjContact *con, int g1, int g2, Vector3<double> p, Vector3<double> n, double fn0,
+					double k, double d);
 
 	// Interface loader
 	boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> surface_plugin_loader;

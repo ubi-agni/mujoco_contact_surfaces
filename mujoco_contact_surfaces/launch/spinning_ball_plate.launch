@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="modelfile"   default="$(find mujoco_contact_surfaces)/assets/spinning_ball_plate_world.xml"  />
+  <arg name="use_sim_time" default="true" />
+  
+  <rosparam file="$(find mujoco_contact_surfaces)/config/mujoco_contact_surfaces.yaml" subst_value="true" />
+
+  <include file="$(find mujoco_ros)/launch/launch_server.launch" pass_all_args="true" >
+    <arg name="/use_sim_time"        value="true" />
+    <arg name="initial_joint_states" value="$(find mujoco_contact_surfaces)/config/spinning_ball_plate_example_initial_joint_velocities.yaml" />
+  </include>
+</launch>

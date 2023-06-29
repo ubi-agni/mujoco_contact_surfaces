@@ -306,6 +306,17 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		GeomCollisionPtr gc(new GeomCollision(g1, g2, s.release()));
 		evaluateContactSurface(m, d, gc);
 		geomCollisions.push_back(gc);
+		int n = gc->pointCollisions.size();
+		for (int i = 0; i < n; ++i) {
+			mjContact *con0   = new mjContact();
+			PointCollision pc = gc->pointCollisions[i];
+
+			if (pc.stiffness <= 0 || pc.fn0 <= 0) {
+				continue;
+			}
+			makeContact(m, con0, g1, g2, pc.p, pc.n, pc.fn0, pc.stiffness, pc.damping);
+			mj_addContact(m, d_.get(), con0);
+		}
 	}
 	return n_con;
 }
@@ -394,6 +405,73 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 	}
 }
 
+double combineFriction(double mu0, double mu1)
+{
+	auto safe_divide = [](const double &num, const double &denom)
+	{
+		return denom == 0.0 ? 0.0 : num / denom;
+	};
+	return safe_divide(2 * mu0 * mu1,
+						mu0 + mu1);
+}
+
+void MujocoContactSurfacesPlugin::makeContact(const mjModel *m, mjContact *con, int g1, int g2, Vector3<double> p,
+                                              Vector3<double> n, double fn0, double k, double d)
+{
+	for (int j = 0; j < 3; ++j) {
+		con->pos[j]   = p[j];
+		con->frame[j] = n[j];
+	}
+	// define frame
+	mjtNum tmp[3], solref[mjNREF], solimp[mjNIMP], friction[5], mix;
+	// mjtNum margin, gap, condim;
+	// normalize xaxis
+	mju_normalize3(con->frame);
+
+	mju_zero3(con->frame + 3);
+
+	if (con->frame[1] < 0.5 && con->frame[1] > -0.5) {
+		con->frame[4] = 1;
+	} else {
+		con->frame[5] = 1;
+	}
+	// make yaxis orthogonal to xaxis
+	mju_scl3(tmp, con->frame, mju_dot3(con->frame, con->frame + 3));
+	mju_subFrom3(con->frame + 3, tmp);
+	mju_normalize3(con->frame + 3);
+	mju_cross(con->frame + 6, con->frame, con->frame + 3);
+
+	con->dist = 100;
+	con->includemargin = 0; 
+
+	mju_copy(con->solref, solref, mjNREF);
+	mju_copy(con->solimp, solimp, mjNIMP);
+	con->solimp[0] = 0.0; 
+	con->solimp[1] = 0.0; 
+	con->solimp[2] = 0;
+
+	ContactProperties *cp1 = contactProperties[g1];
+	ContactProperties *cp2 = contactProperties[g2];
+	double mu              = combineFriction(cp1->dynamic_friction, cp2->dynamic_friction);
+	con->friction[0]       = mu;
+	con->friction[1] = mu;
+	con->friction[2] = mu;
+	con->friction[3] = mu;
+	con->friction[4] = mu;
+
+	con->exclude = 0;
+	con->geom1 = g2;
+	con->geom2 = g1;
+	mju_zero(con->H, 36);
+	con->mu = mu;
+	con->dim = 3;
+	con->efc_address = -1;
+	con->hydroelastic_contact = 1;
+	con->d = d;
+	con->k = k;
+	con->fn0 = fn0;
+}
+
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 {
 	if (visualizeContactSurfaces) {
@@ -443,54 +521,6 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 			const double fn = std::max(0., 1. - pc.damping * vn_BqAq_W) * (pc.fn0 - 0.001 * pc.stiffness * vn_BqAq_W);
 
-
-			if (applyContactSurfaceForces) {
-				const Vector3<double> vt   = v_BqAq_W - pc.n * vn_BqAq_W;
-				double epsilon             = stiction_tolerance * relative_tolerance;
-				epsilon                    = epsilon * epsilon;
-				const double v_slip        = std::sqrt(vt.squaredNorm() + epsilon);
-				const Vector3<double> that = vt / v_slip;
-				double mu_regularized      = mu_coulomb;
-				const double s             = v_slip / stiction_tolerance;
-				if (s < 1) {
-					mu_regularized = mu_coulomb * s * (2.0 - s);
-				}
-
-				const Vector3<double> f_slip = -mu_regularized * that * fn;
-
-				const Vector3<double> f = f_slip + fn * pc.n;
-
-				const mjtNum point[3]  = { pc.p[0], pc.p[1], pc.p[2] };
-				const mjtNum torque[3] = { 0, 0, 0 };
-				const mjtNum forceA[3] = { f[0], f[1], f[2] };
-				const mjtNum forceB[3] = { -f[0], -f[1], -f[2] };
-				mj_applyFT(m, d, forceA, torque, point, m->geom_bodyid[g1], d->qfrc_passive);
-				mj_applyFT(m, d, forceB, torque, point, m->geom_bodyid[g2], d->qfrc_passive);
-			}
-
-			// visualize collision force:
-			// int id = contactProperties[g1]->contact_type == SOFT ? g1 : g2;
-			// // ContactProperties *cp =
-			// //     contactProperties[g1]->contact_type == SOFT ? contactProperties[g1] : contactProperties[g2];
-			// if (m->geom_type[id] == mjGEOM_BOX) {
-			// 	// ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "fn: " << fn);
-			// 	const float rgba[4] = { std::min(1. - fn, 1.), 0, std::max(fn, 0.0), 0.8 };
-			// 	mjtNum pos[3];
-			// 	mjtNum size[3];
-			// 	for (int i = 0; i < 3; ++i) {
-			// 		pos[i]  = d->geom_xpos[3 * id + i];
-			// 		size[i] = m->geom_size[3 * id + i];
-			// 	}
-			// 	mjtNum rot[9];
-			// 	for (int i = 0; i < 9; ++i) {
-			// 		rot[i] = d->geom_xmat[9 * id + i];
-			// 	}
-			// 	if (n_vGeom == MAX_VGEOM) {
-			// 		break;
-			// 	}
-			// 	mjvGeom *g = vGeoms + n_vGeom++;
-			// 	mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
-			// }
 			// visualize
 			if (visualizeContactSurfaces) {
 				current_scale = std::max(current_scale, std::abs(fn));

@@ -30,10 +30,22 @@
     <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
     <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"/>
     <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane"/>
+    <!-- <body name="body_box1" pos="0 0 0.1">
+      <freejoint/>
+    <geom name="box1" type="box"  size="0.3 0.3 0.1" rgba="0.7 0.7 0.7 0.5"/>
+  </body> -->
+  <body name="body_box2" pos="0 0 0.7">
+    <freejoint/>
+  <geom name="box2" type="box"  size="0.05 0.05 0.05" rgba="0.7 0.2 0.2 0.5"/>
+</body>
     <body name="body_box1" pos="0 0 0.35">
         <freejoint/> 
       <geom name="box1" type="box"  size="0.1 0.1 0.1" rgba="0.7 0.7 0.7 0.5"/>
     </body>
+    <body name="body_box3" pos="0 0 0.1">
+      <freejoint/>
+    <geom name="box3" type="box"  size="0.3 0.3 0.1" rgba="0.7 0.7 0.7 0.5"/>
+  </body>
     <body name="body_box0" pos="0 0.0 0.55" >
       <freejoint/>
       <geom name="box0" type="box" size="0.08 0.08 0.08" rgba="0.7 0.7 0.7 0.5"/>
