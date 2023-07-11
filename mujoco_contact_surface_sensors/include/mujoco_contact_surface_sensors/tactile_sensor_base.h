@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -38,11 +38,11 @@
 #include <mujoco_contact_surfaces/plugin_utils.h>
 #include <tactile_msgs/TactileState.h>
 
-namespace mujoco_contact_surface_sensors {
-using namespace mujoco_contact_surfaces;
+namespace mujoco_ros::contact_surfaces::sensors {
+using namespace mujoco_ros::contact_surfaces;
 
 using namespace std::chrono;
-using namespace MujocoSim;
+using namespace mujoco_ros;
 
 class TactileSensorBase : public SurfacePlugin
 {
@@ -88,4 +88,4 @@ protected:
 private:
 };
 
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_ros::contact_surfaces::sensors

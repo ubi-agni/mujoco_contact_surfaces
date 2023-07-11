@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 #include <drake/geometry/query_results/contact_surface.h>
 #include <mujoco_ros/common_types.h>
 
-namespace mujoco_contact_surfaces {
+namespace mujoco_ros::contact_surfaces {
 
 // Maximum number of geoms for visualization
 const int MAX_VGEOM = 10000;
@@ -75,4 +75,4 @@ class SurfacePlugin;
 typedef boost::shared_ptr<SurfacePlugin> SurfacePluginPtr;
 typedef boost::shared_ptr<GeomCollision> GeomCollisionPtr;
 
-} // namespace mujoco_contact_surfaces
+} // namespace mujoco_ros::contact_surfaces

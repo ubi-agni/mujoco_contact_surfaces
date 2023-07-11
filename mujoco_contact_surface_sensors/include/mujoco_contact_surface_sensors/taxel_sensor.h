@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -66,9 +66,9 @@
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
 
-namespace mujoco_contact_surface_sensors {
+namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
-using namespace mujoco_contact_surfaces;
+using namespace mujoco_ros::contact_surfaces;
 
 enum TaxelMethod
 {
@@ -102,4 +102,4 @@ private:
 	double tactile_current_scale = 0.;
 };
 
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_ros::contact_surfaces::sensors

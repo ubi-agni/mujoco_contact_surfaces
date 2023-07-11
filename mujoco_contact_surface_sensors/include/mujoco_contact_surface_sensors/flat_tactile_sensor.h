@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -37,8 +37,8 @@
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
 
-namespace mujoco_contact_surface_sensors {
-using namespace mujoco_contact_surfaces;
+namespace mujoco_ros::contact_surfaces::sensors {
+using namespace mujoco_ros::contact_surfaces;
 
 class FlatTactileSensor : public TactileSensorBase
 {
@@ -48,13 +48,18 @@ public:
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	virtual void projection_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	virtual void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
 private:
+	bool use_parallel = true;
+	int sampling_resolution = 5; // 25 samples per cell
 	double resolution;
 	int cx, cy;
 	// color scaling factors for tactile visualization
 	double tactile_running_scale = 3.;
 	double tactile_current_scale = 0.;
+	Eigen::Vector3d sensor_normal;
 };
 
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_ros::contact_surfaces::sensors

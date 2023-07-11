@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -41,8 +41,8 @@
 
 #include <pluginlib/class_loader.h>
 
-namespace mujoco_contact_surfaces {
-using namespace MujocoSim;
+namespace mujoco_ros::contact_surfaces {
+using namespace mujoco_ros;
 
 class SurfacePlugin
 {
@@ -172,4 +172,4 @@ bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
 const static std::string SURFACE_PLUGIN_PARAM_NAME = "SurfacePlugins";
 
 } // end namespace plugin_utils
-} // namespace mujoco_contact_surfaces
+} // namespace mujoco_ros::contact_surfaces

@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
 
-namespace mujoco_contact_surface_sensors {
+namespace mujoco_ros::contact_surfaces::sensors {
 
 bool TactileSensorBase::load(mjModelPtr m, mjDataPtr d)
 {
@@ -88,7 +88,7 @@ void TactileSensorBase::renderCallback(mjModelPtr model, mjDataPtr data, mjvScen
 {
 	if (visualize) {
 		ROS_WARN_STREAM_COND_NAMED(
-		    scene->maxgeom < n_vGeom, "mujoco_contact_surface_sensors",
+		    scene->maxgeom - scene->ngeom < n_vGeom, "mujoco_contact_surface_sensors",
 		    "Not all vgeoms could be visualized: n_vGeom = " << n_vGeom << " scene->maxgeom = " << scene->maxgeom);
 		for (int i = 0; i < n_vGeom && scene->ngeom < scene->maxgeom; ++i) {
 			scene->geoms[scene->ngeom++] = vGeoms[i];
@@ -101,11 +101,11 @@ void TactileSensorBase::reset() {}
 bool TactileSensorBase::initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9],
                                   const float rgba[4])
 {
-	if (n_vGeom < mujoco_contact_surfaces::MAX_VGEOM) {
+	if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
 		mjvGeom *g = vGeoms + n_vGeom++;
 		mjv_initGeom(g, type, size, pos, mat, rgba);
 		return true;
 	}
 	return false;
 }
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_ros::contact_surfaces::sensors

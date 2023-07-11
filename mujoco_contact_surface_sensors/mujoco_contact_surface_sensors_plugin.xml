@@ -1,16 +1,16 @@
 <library path="lib/libmujoco_contact_surface_sensors">
   <class
     name="mujoco_contact_surface_sensors/FlatTactileSensor"
-    type="mujoco_contact_surface_sensors::FlatTactileSensor"
-    base_class_type="mujoco_contact_surfaces::SurfacePlugin">
+    type="mujoco_ros::contact_surfaces::sensors::FlatTactileSensor"
+    base_class_type="mujoco_ros::contact_surfaces::SurfacePlugin">
     <description>
       Flat contact sensor based on mujoco contact surfaces.
     </description>
   </class>
   <class
     name="mujoco_contact_surface_sensors/TaxelSensor"
-    type="mujoco_contact_surface_sensors::TaxelSensor"
-    base_class_type="mujoco_contact_surfaces::SurfacePlugin">
+    type="mujoco_ros::contact_surfaces::sensors::TaxelSensor"
+    base_class_type="mujoco_ros::contact_surfaces::SurfacePlugin">
     <description>
       Taxel contact sensor based on mujoco contact surfaces.
     </description>

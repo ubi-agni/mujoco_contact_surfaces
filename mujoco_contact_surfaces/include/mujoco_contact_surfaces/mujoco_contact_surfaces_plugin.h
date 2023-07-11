@@ -41,7 +41,7 @@
  *
  * Software License Agreement (BSD 3-Clause License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@
 #include <chrono>
 #include <pluginlib/class_loader.h>
 
-#include <mujoco_ros/mujoco_sim.h>
+#include <mujoco_ros/mujoco_env.h>
 #include <mujoco_ros/plugin_utils.h>
 
 #include <mujoco/mujoco.h>
@@ -115,7 +115,7 @@
 #include <mujoco_contact_surfaces/common_types.h>
 #include <mujoco_contact_surfaces/plugin_utils.h>
 
-namespace mujoco_contact_surfaces {
+namespace mujoco_ros::contact_surfaces {
 
 using namespace std::chrono;
 using namespace drake;
@@ -124,7 +124,7 @@ using namespace drake::geometry::internal;
 using namespace drake::math;
 using namespace drake::multibody;
 using namespace drake::multibody::internal;
-using namespace MujocoSim;
+using namespace mujoco_ros;
 using namespace std::chrono;
 
 const std::string PREFIX = "cs::";
@@ -199,7 +199,7 @@ typedef struct ContactProperties
 	    , resolution_hint(0.0){};
 } ContactProperties;
 
-class MujocoContactSurfacesPlugin : public MujocoSim::MujocoPlugin
+class MujocoContactSurfacesPlugin : public mujoco_ros::MujocoPlugin
 {
 public:
 	virtual ~MujocoContactSurfacesPlugin();
@@ -250,4 +250,4 @@ private:
 	std::vector<SurfacePluginPtr> plugins, cb_ready_plugins;
 };
 
-} // namespace mujoco_contact_surfaces
+} // namespace mujoco_ros::contact_surfaces

@@ -1,4 +1,4 @@
 MujocoPlugins:
   - type: mujoco_contact_surfaces/MujocoContactSurfacesPlugin
     SurfacePlugins:
-      - { type: mujoco_contact_surface_sensors/FlatTactileSensor, sensorName: "myrmex_sensor0", geomName: "myrmex_foam", topicName: "/tactile_module_16x16_v2", updateRate: 50.0, visualize: False, resolution: 0.025 }
+      - { type: mujoco_contact_surface_sensors/FlatTactileSensor, sensorName: "myrmex_sensor0", geomName: "myrmex_foam", topicName: "/tactile_module_16x16_v2", updateRate: 1000.0, visualize: True, use_parallel: True, resolution: 0.0025, sampling_resolution: 4 }

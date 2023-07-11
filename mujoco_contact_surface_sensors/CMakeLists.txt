@@ -4,7 +4,9 @@ project(mujoco_contact_surface_sensors)
 add_definitions(-std=c++17)
 
 
-set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined" )
+set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined -fno-lto " )
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcf-protection=none")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcf-protection=none")
 
 find_package(catkin REQUIRED COMPONENTS
   pluginlib
@@ -12,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   tactile_msgs
 )
 find_package(drake REQUIRED)
+find_package(OpenMP REQUIRED)
 
 catkin_package(
  CATKIN_DEPENDS
@@ -44,6 +47,7 @@ target_link_libraries(${PROJECT_NAME}
   ${mujoco_contact_surfaces_LIBRARIES}
   ${catkin_LIBRARIES}
   drake::drake
+  OpenMP::OpenMP_CXX
 )
 
 install(TARGETS ${PROJECT_NAME}

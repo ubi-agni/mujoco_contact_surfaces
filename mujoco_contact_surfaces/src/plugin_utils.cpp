@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@
 
 #include <mujoco_contact_surfaces/plugin_utils.h>
 
-namespace mujoco_contact_surfaces::plugin_utils {
+namespace mujoco_ros::contact_surfaces::plugin_utils {
 
 bool parsePlugins(const XmlRpc::XmlRpcValue &config,
                   boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
@@ -62,7 +62,7 @@ bool parsePlugins(const XmlRpc::XmlRpcValue &config,
 	} else {
 		ROS_DEBUG_NAMED("mujoco_contact_surfaces_plugin_loader", "Initializing plugin loader ... ");
 		plugin_loader_ptr_.reset(new pluginlib::ClassLoader<SurfacePlugin>("mujoco_contact_surfaces",
-		                                                                   "mujoco_contact_surfaces::SurfacePlugin"));
+		                                                                   "mujoco_ros::contact_surfaces::SurfacePlugin"));
 	}
 	return true;
 }

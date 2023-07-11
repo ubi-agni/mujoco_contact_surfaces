@@ -41,7 +41,7 @@
  *
  * Software License Agreement (BSD 3-Clause License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -80,7 +80,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-namespace mujoco_contact_surfaces {
+namespace mujoco_ros::contact_surfaces {
 
 namespace {
 // Map from data pointers to instances of the plugin. This instance is used in callback wrappers that are called from
@@ -229,8 +229,8 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 
 	// Parse, register and load plugins
 	XmlRpc::XmlRpcValue plugin_config;
-	if (mujoco_contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader, plugin_config)) {
-		mujoco_contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader,
+	if (mujoco_ros::contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader, plugin_config)) {
+		mujoco_ros::contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader,
 		                                                       plugins);
 	}
 	for (const auto &plugin : plugins) {
@@ -270,12 +270,15 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 
 	if (cp1 == NULL or cp2 == NULL or (cp1->contact_type == RIGID and cp2->contact_type == RIGID)) {
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
+	} else {
+		ROS_DEBUG_STREAM("Found CS enabled geom '" << cp1->geom_name << "' (" << g1 << ") to be colliding with " << cp2->geom_name << "(" << g2 << ")");
 	}
 
 	int n_con = applyContactSurfaceForces ? 0 : defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 
 	std::unique_ptr<ContactSurface<double>> s;
 	if (cp1->contact_type == SOFT and cp2->contact_type == SOFT) {
+		ROS_DEBUG_STREAM("Collision is soft to soft");
 		RigidTransform<double> p1 = getGeomPose(g1, d);
 		RigidTransform<double> p2 = getGeomPose(g2, d);
 		s = ComputeContactSurfaceFromCompliantVolumes<double>(cp1->drake_id, *cp1->pf, *cp1->bvh_v, p1, cp2->drake_id,
@@ -283,12 +286,15 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 		                                                      hydroelastic_contact_representation);
 	} else {
 		if (cp1->contact_type == RIGID) {
+			ROS_DEBUG_STREAM(cp1->geom_name << " is rigid");
+			ROS_DEBUG_STREAM(cp2->geom_name << " is soft");
 			std::swap(cp1, cp2);
 			std::swap(g1, g2);
 		}
 		RigidTransform<double> p1 = getGeomPose(g1, d);
 		RigidTransform<double> p2 = getGeomPose(g2, d);
 		if (m->geom_type[g2] == mjGEOM_PLANE) {
+			ROS_DEBUG_STREAM(cp2->geom_name << " is a geom plane");
 			s = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(cp1->drake_id, *cp1->pf, *cp1->bvh_v, p1, cp2->drake_id,
 			                                                      p2, hydroelastic_contact_representation);
 		} else {
@@ -445,6 +451,7 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 
 
 			if (applyContactSurfaceForces) {
+				ROS_DEBUG_STREAM("Apply forces is enabled");
 				const Vector3<double> vt   = v_BqAq_W - pc.n * vn_BqAq_W;
 				double epsilon             = stiction_tolerance * relative_tolerance;
 				epsilon                    = epsilon * epsilon;
@@ -551,7 +558,7 @@ void MujocoContactSurfacesPlugin::initCollisionFunction()
 		for (int j = 0; j < mjNGEOMTYPES; ++j) {
 			defaultCollisionFunctions[i][j] = mjCOLLISIONFUNC[i][j];
 			// registerCollisionFunc(i, j, collision_function);
-			registerCollisionFunc(i, j, collision_cb_wrapper);
+			env_ptr_->registerCollisionFunction(i, j, collision_cb_wrapper);
 		}
 	}
 }
@@ -928,4 +935,4 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 
 } // namespace mujoco_contact_surfaces
 
-PLUGINLIB_EXPORT_CLASS(mujoco_contact_surfaces::MujocoContactSurfacesPlugin, MujocoSim::MujocoPlugin)
+PLUGINLIB_EXPORT_CLASS(mujoco_ros::contact_surfaces::MujocoContactSurfacesPlugin, mujoco_ros::MujocoPlugin)

@@ -1,8 +1,8 @@
 <library path="lib/libmujoco_contact_surfaces">
   <class
     name="mujoco_contact_surfaces/MujocoContactSurfacesPlugin"
-    type="mujoco_contact_surfaces::MujocoContactSurfacesPlugin"
-    base_class_type="MujocoSim::MujocoPlugin">
+    type="mujoco_ros::contact_surfaces::MujocoContactSurfacesPlugin"
+    base_class_type="mujoco_ros::MujocoPlugin">
     <description>
       Mujoco plugin that allows to replace the default point contacts of mujoco with contact surfaces.
     </description>

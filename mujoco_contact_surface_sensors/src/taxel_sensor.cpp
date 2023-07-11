@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2022, Bielefeld University
+ *  Copyright (c) 2023, Bielefeld University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-namespace mujoco_contact_surface_sensors {
+namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
 using namespace drake::geometry;
 
@@ -63,7 +63,7 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 		if (taxel_array.getType() == XmlRpc::XmlRpcValue::TypeArray && taxel_array.size() > 0) {
 			int n = taxel_array.size();
 			if (visualize) {
-				vGeoms = new mjvGeom[mujoco_contact_surfaces::MAX_VGEOM];
+				vGeoms = new mjvGeom[mujoco_ros::contact_surfaces::MAX_VGEOM];
 			}
 			taxel_mat = Eigen::Matrix<double, 4, Eigen::Dynamic>(4, n);
 
@@ -278,13 +278,24 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 				}
 		}
 	} else {
+		Eigen::Matrix4d M;
+		M << data->geom_xmat[9 * id + 0], data->geom_xmat[9 * id + 1], data->geom_xmat[9 * id + 2],
+		    data->geom_xpos[3 * id], data->geom_xmat[9 * id + 3], data->geom_xmat[9 * id + 4],
+		    data->geom_xmat[9 * id + 5], data->geom_xpos[3 * id + 1], data->geom_xmat[9 * id + 6],
+		    data->geom_xmat[9 * id + 7], data->geom_xmat[9 * id + 8], data->geom_xpos[3 * id + 2], 0, 0, 0, 1;
+		Eigen::Matrix<double, 4, Eigen::Dynamic> taxels_at_M  = M * taxel_mat;
+		Eigen::Matrix<double, 3, Eigen::Dynamic> taxels_at_M3 = taxels_at_M.topRows<3>();
 		// If there are no sampled points on the surface fill the sensor message with zeros
 		for (int i = 0; i < n; ++i) {
 			tactile_state_msg_.sensors[0].values[i] = 0;
+			pos[0] = taxels_at_M3(0, i);
+			pos[1] = taxels_at_M3(1, i);
+			pos[2] = taxels_at_M3(2, i);
+			initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
 		}
 	}
 }
 
-} // namespace mujoco_contact_surface_sensors
+} // namespace mujoco_ros::contact_surfaces::sensors
 
-PLUGINLIB_EXPORT_CLASS(mujoco_contact_surface_sensors::TaxelSensor, mujoco_contact_surfaces::SurfacePlugin)
+PLUGINLIB_EXPORT_CLASS(mujoco_ros::contact_surfaces::sensors::TaxelSensor, mujoco_ros::contact_surfaces::SurfacePlugin)
