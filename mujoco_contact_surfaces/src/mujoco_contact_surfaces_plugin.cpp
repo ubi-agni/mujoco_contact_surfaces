@@ -933,6 +933,11 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 	}
 }
 
+std::vector<SurfacePluginPtr> MujocoContactSurfacesPlugin::getPlugins() {
+	return this->plugins;
+}
+
+
 } // namespace mujoco_contact_surfaces
 
 PLUGINLIB_EXPORT_CLASS(mujoco_ros::contact_surfaces::MujocoContactSurfacesPlugin, mujoco_ros::MujocoPlugin)

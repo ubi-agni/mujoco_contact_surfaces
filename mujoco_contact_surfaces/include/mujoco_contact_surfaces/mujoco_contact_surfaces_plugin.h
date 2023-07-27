@@ -204,17 +204,20 @@ class MujocoContactSurfacesPlugin : public mujoco_ros::MujocoPlugin
 public:
 	virtual ~MujocoContactSurfacesPlugin();
 
-	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
-
-	virtual void passiveCallback(mjModelPtr model, mjDataPtr data);
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
+	// Overloaded entry point
+	virtual bool load(mjModelPtr m, mjDataPtr d) override;
 
 	// Called on reset
-	virtual void reset();
-	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
+	virtual void reset() override;
+
+	virtual void passiveCallback(mjModelPtr model, mjDataPtr data) override;
+	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene) override;
+	virtual void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id) override;
+
 	void passive_cb(const mjModel *m, mjData *d);
-	void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id);
+	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
+
+	std::vector<SurfacePluginPtr> getPlugins();
 
 protected:
 	// Mujoco model and data pointers
