@@ -127,6 +127,108 @@ using namespace drake::multibody::internal;
 using namespace mujoco_ros;
 using namespace std::chrono;
 
+#ifdef BENCHMARK_TACTILE
+
+struct Timer
+{
+	Timer() { reset(); }
+	float elapsed() const
+	{
+		std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - start);
+		return (float)time_span.count();
+	}
+	void reset() { start = std::chrono::high_resolution_clock::now(); }
+	std::chrono::high_resolution_clock::time_point start;
+};
+
+struct SurfaceBenchmark {
+	void report() {
+		double evaluate, passive, num_s, collision;
+		get_avgs(evaluate, passive, num_s, collision);
+		ROS_WARN_STREAM("Surface Benchmark Report:\n\tcollision: " << collision << "ms\n\tevaluate: " << evaluate << "ms\n\tpassive: " << passive << "ms\n\tnum_s: " << num_s);
+		last_report = ros::Time::now();
+	}
+
+	void get_avgs(double& evaluate, double& passive, double& num_s, double &collision_cb) {
+		evaluate = 0.;
+		passive = 0.;
+		num_s = 0.;
+		collision_cb = 0.;
+		for (uint i = 0; i < num_filled; i++) {
+			evaluate += this->evaluate[i];
+			passive += this->passive[i];
+			num_s += this->num_s[i];
+			collision_cb += this->collision_cb[i];
+		}
+		double factor = 1000. / num_filled;
+		evaluate     *= factor;
+		passive      *= factor;
+		collision_cb *= factor;
+
+		num_s        /= num_filled;
+	}
+
+	void next_step() {
+		if (current_filled) {
+			current_filled = false;
+			current_idx++;
+			num_filled = std::min(num_filled + 1u, 100u);
+			if (current_idx >= 100) {
+				current_idx = 0;
+			}
+		}
+	}
+
+	void add_evaluate(double evaluate) {
+		this->evaluate[current_idx] += evaluate;
+		if (!current_filled) {
+			passive[current_idx] = 0.;
+			num_s[current_idx] = 0.;
+			collision_cb[current_idx] = 0.;
+		}
+		current_filled = true;
+	}
+	void add_passive(double passive) {
+		this->passive[current_idx] = passive;
+		if (!current_filled) {
+			evaluate[current_idx] = 0.;
+			num_s[current_idx] = 0.;
+			collision_cb[current_idx] = 0.;
+		}
+		current_filled = true;
+	}
+	void add_num_s(double num_s) {
+		this->num_s[current_idx] += num_s;
+		if (!current_filled) {
+			evaluate[current_idx] = 0.;
+			passive[current_idx] = 0.;
+			collision_cb[current_idx] = 0.;
+		}
+		current_filled = true;
+	}
+	void add_collision(double collision_cb) {
+		this->collision_cb[current_idx] += collision_cb;
+		if (!current_filled) {
+			evaluate[current_idx] = 0.;
+			passive[current_idx] = 0.;
+			num_s[current_idx] = 0.;
+		}
+		current_filled = true;
+	}
+
+	double evaluate[100] = {0.};
+	double passive[100] = {0.};
+	double num_s[100] = {0.};
+	double collision_cb[100] = {0.};
+
+	ros::Time last_report = ros::Time(0);
+	bool current_filled = false;
+	uint num_filled = 0;
+	uint current_idx = 0;
+};
+#endif
+
 const std::string PREFIX = "cs::";
 
 typedef enum _contactType
@@ -228,6 +330,15 @@ public:
 	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
 
 	std::vector<SurfacePluginPtr> getPlugins();
+
+#ifdef BENCHMARK_TACTILE
+	SurfaceBenchmark benchmark;
+	bool print_benchmark = true;
+	Timer evaluate_timer;
+	Timer passive_timer;
+	Timer collision_timer;
+	virtual void lastStageCallback(mjModelPtr model, mjDataPtr data) override;
+#endif
 
 protected:
 	// Mujoco model and data pointers

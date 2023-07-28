@@ -10,6 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcf-protection=none")
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(USE_SSE "Use SSE4 instructions, if available" ON)
+option(ENABLE_TACT_BENCHMARK "Build tactile sensors with benchmarking support" OFF)
 
 find_package(catkin REQUIRED COMPONENTS
   pluginlib
@@ -58,6 +59,13 @@ elseif(USE_SSE)
   message(WARNING "SSE4 not found, building without SSE4")
 endif()
 
+if(ENABLE_TACT_BENCHMARK)
+  message(STATUS "Building with benchmarking support")
+  set(BENCHMARK_TACTILE ON)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BENCHMARK_TACTILE)
+endif()
+
+
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   include
   ${mujoco_contact_surfaces_INCLUDE_DIRS}
@@ -70,6 +78,11 @@ target_link_libraries(${PROJECT_NAME}
   drake::drake
   OpenMP::OpenMP_CXX
 )
+
+if(ENABLE_TACT_BENCHMARK)
+  add_subdirectory(src/benchmark)
+endif()
+
 
 install(TARGETS ${PROJECT_NAME}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

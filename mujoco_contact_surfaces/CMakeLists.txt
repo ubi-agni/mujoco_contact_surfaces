@@ -6,6 +6,8 @@ add_definitions(-std=c++17)
 
 set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined" )
 
+option(ENABLE_TACT_BENCHMARK "Build contact surfaces with benchmark support" OFF)
+
 find_package(catkin REQUIRED COMPONENTS
   pluginlib
   mujoco_ros
@@ -32,6 +34,15 @@ add_library(${PROJECT_NAME}
   src/mujoco_contact_surfaces_plugin.cpp
   src/plugin_utils.cpp
 )
+
+if(ENABLE_TACT_BENCHMARK)
+  message(STATUS "Building contact surfaces with benchmark support")
+  set(BENCHMARK_TACTILE ON)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE BENCHMARK_TACTILE)
+else()
+  message(STATUS "Building contact surfaces without benchmark support")
+endif()
+
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   include
   ${catkin_INCLUDE_DIRS}

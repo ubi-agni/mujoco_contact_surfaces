@@ -100,7 +100,13 @@ void passive_cb_wrapper(const mjModel *m, mjData *d)
 		default_passive_cb(m, d);
 	}
 	if (instance_map.find(d) != instance_map.end()) {
+#ifdef BENCHMARK_TACTILE
+		instance_map[d]->passive_timer.reset();
 		instance_map[d]->passive_cb(m, d);
+		instance_map[d]->benchmark.add_passive(instance_map[d]->passive_timer.elapsed());
+#else
+		instance_map[d]->passive_cb(m, d);
+#endif
 	}
 }
 
@@ -256,6 +262,9 @@ void MujocoContactSurfacesPlugin::reset()
 int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2,
                                               mjtNum margin)
 {
+#ifdef BENCHMARK_TACTILE
+	collision_timer.reset();
+#endif
 	int t1 = m->geom_type[g1];
 	int t2 = m->geom_type[g2];
 
@@ -310,9 +319,21 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 			std::swap(g1, g2);
 		}
 		GeomCollisionPtr gc(new GeomCollision(g1, g2, s.release()));
+#ifdef BENCHMARK_TACTILE
+		evaluate_timer.reset();
 		evaluateContactSurface(m, d, gc);
+		benchmark.add_evaluate(evaluate_timer.elapsed());
+		benchmark.add_num_s(1);
+#else	
+		evaluateContactSurface(m, d, gc);
+#endif
 		geomCollisions.push_back(gc);
 	}
+
+#ifdef BENCHMARK_TACTILE
+	benchmark.add_collision(collision_timer.elapsed());
+#endif
+
 	return n_con;
 }
 
@@ -923,6 +944,16 @@ std::vector<SurfacePluginPtr> MujocoContactSurfacesPlugin::getPlugins() {
 	return this->plugins;
 }
 
+#ifdef BENCHMARK_TACTILE
+void MujocoContactSurfacesPlugin::lastStageCallback(mjModelPtr model, mjDataPtr data) {
+	this->benchmark.next_step();
+	if (print_benchmark && 
+			this->benchmark.num_filled > 0 && 
+			ros::Time::now() - this->benchmark.last_report > ros::Duration(0.2)) {
+		this->benchmark.report();
+	}
+}
+#endif
 
 } // namespace mujoco_contact_surfaces
 
