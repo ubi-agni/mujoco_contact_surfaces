@@ -144,15 +144,25 @@ typedef struct ContactProperties
 	const contactType contact_type;
 	const Shape *shape;
 	const VolumeMesh<double> *vm;
-	const VolumeMeshFieldLinear<double, double> *pf;
-	const Bvh<Obb, VolumeMesh<double>> *bvh_v;
+	std::shared_ptr<const VolumeMeshFieldLinear<double, double>> pf;
+	std::shared_ptr<const Bvh<Obb, VolumeMesh<double>>> bvh_v;
 	const TriangleSurfaceMesh<double> *sm;
-	const Bvh<Obb, TriangleSurfaceMesh<double>> *bvh_s;
+	std::shared_ptr<const Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_s;
 	const double hydroelastic_modulus;
 	const double dissipation;
 	const double static_friction;
 	const double dynamic_friction;
 	const double resolution_hint;
+
+	~ContactProperties() {
+		if (shape != nullptr) delete shape;
+		// if (pf != nullptr) delete pf;
+		// if (bvh_v != nullptr) delete bvh_v;
+		// if (vm != nullptr) delete vm; // bvh_v owns vm
+		// if (sm != nullptr) delete sm;
+		// if (bvh_s != nullptr) delete bvh_s;
+
+	}
 
 	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape, VolumeMesh<double> *vm,
 	                  VolumeMeshFieldLinear<double, double> *pf, Bvh<Obb, VolumeMesh<double>> *bvh_v,
@@ -238,7 +248,7 @@ private:
 	// TODO there seems to be a bug where this is not correctly parsed
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
 
-	std::map<int, ContactProperties *> contactProperties;
+	std::map<int, std::shared_ptr<ContactProperties>> contactProperties;
 
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();
