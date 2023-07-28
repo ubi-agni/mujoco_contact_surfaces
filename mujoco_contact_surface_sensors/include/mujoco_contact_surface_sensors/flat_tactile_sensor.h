@@ -36,6 +36,7 @@
 #pragma once
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
+#include <mujoco_contact_surface_sensors/bvh.h>
 
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace mujoco_ros::contact_surfaces;
@@ -43,16 +44,18 @@ using namespace mujoco_ros::contact_surfaces;
 class FlatTactileSensor : public TactileSensorBase
 {
 public:
-	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
+	// Overloaded entry point
+	virtual bool load(mjModelPtr m, mjDataPtr d) override;
 
 protected:
-	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
-	virtual void projection_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
-	virtual void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	virtual void internal_update(const mjModel *m, mjData *d,
+	                             const std::vector<GeomCollisionPtr> &geomCollisions) override;
+	void projection_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	void bvh_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
 private:
-	bool use_parallel = true;
+	bool use_parallel       = true;
 	int sampling_resolution = 5; // 25 samples per cell
 	double resolution;
 	int cx, cy;
