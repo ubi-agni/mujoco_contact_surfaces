@@ -36,7 +36,7 @@
 
 #include <mujoco_contact_surface_sensors/flat_tactile_sensor.h>
 #include <typeinfo>
-
+#include <cmath>
 #include <omp.h>
 
 #include <pluginlib/class_list_macros.h>
@@ -65,8 +65,10 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 
 		double xs = m->geom_size[3 * geomID];
 		double ys = m->geom_size[3 * geomID + 1];
-		cx        = (int)(2 * xs / resolution);
-		cy        = (int)(2 * ys / resolution);
+		// std::floorl gives compiler errors, this is a known bug:
+		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79700
+		cx        = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
+		cy        = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 		vGeoms    = new mjvGeom[2 * cx * sampling_resolution * cy * sampling_resolution];
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
 		                      "Found tactile sensor: " << sensorName << " " << cx << "x" << cy);
