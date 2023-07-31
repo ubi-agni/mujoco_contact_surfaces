@@ -67,9 +67,9 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 		double ys = m->geom_size[3 * geomID + 1];
 		// std::floorl gives compiler errors, this is a known bug:
 		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79700
-		cx        = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
-		cy        = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
-		vGeoms    = new mjvGeom[2 * cx * sampling_resolution * cy * sampling_resolution];
+		cx     = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
+		cy     = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
+		vGeoms = new mjvGeom[2 * cx * cy + 50];
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
 		                      "Found tactile sensor: " << sensorName << " " << cx << "x" << cy);
 
@@ -109,6 +109,42 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 #endif
 }
 
+void FlatTactileSensor::render_tiles(Eigen::ArrayXXd pressure, mjtNum rot[9], mjtNum origin[3])
+{
+	if (!visualize)
+		return;
+
+	mjtNum size[3]        = { resolution / 2.f, resolution / 2.f, 0.0005 };
+	mjtNum sphere_size[3] = { 0.0005, 0.0005, 0.0005 };
+	const float rgbaA[4]  = { 1.f, 0.0f, 0.f, 0.3f };
+	const float rgbaC[4]  = { 1.0f, 1.0f, 1.f, 0.8f };
+
+	for (int x = 0; x < cx; x++) {
+		for (int y = 0; y < cy; y++) {
+			double mean_pressure = pressure(x, y);
+
+			tactile_current_scale = std::max(std::abs(mean_pressure), tactile_current_scale);
+			float ps              = std::min(std::abs(mean_pressure), tactile_running_scale) / tactile_running_scale;
+			const float rgba[4]   = { ps, 0, (1.f - ps), 0.8 };
+
+			mjtNum pos[3] = { origin[0] + x * resolution + (resolution / 2), origin[1] + y * resolution + (resolution / 2),
+				               origin[2] };
+
+			mjvGeom *g = vGeoms + n_vGeom++;
+			mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
+
+			// Points and arrow vis
+			// g = vGeoms + n_vGeom++;
+			// mjv_initGeom(g, mjGEOM_SPHERE, sphere_size, pos, rot, rgbaC);
+			if (mean_pressure > 0.0) {
+				g               = vGeoms + n_vGeom++;
+				mjtNum sizeA[3] = { 0.001, 0.001, 0.1 * ps };
+				mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, rot, rgbaA);
+			}
+		}
+	}
+}
+
 void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions)
 {
 	int id    = geomID;
@@ -117,11 +153,6 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	float zs  = static_cast<float>(m->geom_size[3 * id + 2]);
 	float res = static_cast<float>(resolution);
 
-	const float rgbaInt[4] = { 0.2f, 0.2f, 0.3f, 0.8f };
-	const float rgbaC[4]   = { 0.f, 0.0f, 1.f, 0.8f };
-	const float rgbaA[4]   = { 1.f, 0.0f, 0.f, 0.3f };
-	const float rgbaI[4]   = { 0.f, 1.0f, 0.f, 0.3f };
-	mjtNum size[3]         = { 0.001, 0.001, 0.001 };
 	mjtNum rot[9];
 	mju_copy(rot, d->geom_xmat + 9 * id, 9);
 
@@ -133,9 +164,12 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	float3 sensor_center(static_cast<float>(d->geom_xpos[3 * geomID]), static_cast<float>(d->geom_xpos[3 * geomID + 1]),
 	                     static_cast<float>(d->geom_xpos[3 * geomID + 2]));
 
+	mjtNum sensor_topleft[3] = { sensor_center[0] - xs, sensor_center[1] - ys, sensor_center[2] + zs };
+
 	BVH bvh[geomCollisions.size()];
 	int bvh_idx = 0;
 
+	Eigen::ArrayXXd pressure = Eigen::ArrayXXd::Zero(cx, cy);
 #ifdef BENCHMARK_TACTILE
 	timer.reset();
 	int num_tris = 0;
@@ -151,6 +185,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	double bblas = timer.elapsed();
 	if (bvh_idx == 0) {
 		benchmark_bvh.add_measure(bblas, 0., bvh_idx, 0., 0., 0., 0.);
+		render_tiles(pressure, rot, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
 #else
@@ -160,8 +195,10 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 			bvh_idx++;
 		}
 	}
-	if (bvh_idx == 0)
+	if (bvh_idx == 0) {
+		render_tiles(pressure, rot, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
+	}
 #endif
 
 	TLAS tlas(bvh, bvh_idx);
@@ -172,8 +209,6 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #else
 	tlas.build();
 #endif
-	int x, y, t, i, j;
-	Eigen::ArrayXXd pressure   = Eigen::ArrayXXd::Zero(sampling_resolution * cx, sampling_resolution * cy);
 	float rSampling_resolution = resolution / sampling_resolution; // divide once to save time
 
 #ifdef BENCHMARK_TACTILE
@@ -181,13 +216,20 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	int num_rays = cx * cy * sampling_resolution * sampling_resolution;
 	timer.reset();
 #endif
-#pragma omp target map(tofrom : pressure) map(to : x, y, t, i, j) if (use_parallel)
-	{
-#pragma omp teams distribute parallel for schedule(dynamic) if(use_parallel)
-		for (x = 0; x < cx; x++) { // for each cell on axis x
-			for (y = 0; y < cy; y++) { // for each cell on axis y
-				for (i = 0; i < sampling_resolution; i++) { // for each sample in cell on axis x
-					for (j = 0; j < sampling_resolution; j++) { // for each sample in cell on axis y
+
+	double *pressure_raw = pressure.data();
+	double rmean         = 1. / (sampling_resolution * sampling_resolution);
+	ROS_DEBUG_STREAM_ONCE("rmean: " << rmean);
+	for (int x = 0; x < cx; x++) { // for each cell on axis x
+		for (int y = 0; y < cy; y++) { // for each cell on axis y
+			double avg_pressure = 0;
+			{
+// #pragma omp declare reduction (+: Eigen::ArrayXXd : omp_out += omp_in) initializer(omp_priv=Eigen::ArrayXXd::Zero(cx,
+// cy)) #pragma omp target map(tofrom : pressure_raw) map(to : x, y, t, i, j, sensor_center, rSampling_resolution, xs,
+// ys, zs, tlas) if (use_parallel)
+#pragma omp parallel for reduction(+ : avg_pressure) schedule(dynamic, 8) if (use_parallel && sampling_resolution > 8)
+				for (int i = 0; i < sampling_resolution; i++) { // for each sample in cell on axis x
+					for (int j = 0; j < sampling_resolution; j++) { // for each sample in cell on axis y
 
 						float3 sensor_point =
 						    sensor_center +
@@ -208,13 +250,14 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #ifdef BENCHMARK_TACTILE
 							hits++;
 #endif
-							pressure(x * sampling_resolution + i, y * sampling_resolution + j) =
-							    tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) *
-							    tlas.blas[blas_idx].surface->area(tri_idx);
+							// We sample points around the sensor in its receptive field and average them
+							avg_pressure += tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) * rmean;
 						}
 					}
 				}
 			}
+			pressure_raw[x + cy * y]                         = avg_pressure;
+			tactile_state_msg_.sensors[0].values[x + cy * y] = avg_pressure;
 		}
 	}
 #ifdef BENCHMARK_TACTILE
@@ -223,36 +266,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #endif
 	// ROS_DEBUG_STREAM("BVH BLAS: " << (bblas * 1000.) << "ms, TLAS: " << (btlas*1000.) << "ms, TR: " << (tr*1000.) <<
 	// "ms, hits: " << hits);
-
-	for (int x = 0; x < cx; x++) {
-		for (int y = 0; y < cy; y++) {
-			double mean_pressure = 0.0;
-#pragma omp parallel for collapse(2) reduction(+ : mean_pressure)
-			for (int i = 0; i < sampling_resolution; i++) {
-				for (int j = 0; j < sampling_resolution; j++) {
-					mean_pressure += pressure(sampling_resolution * x + i, sampling_resolution * y + j);
-				}
-			}
-
-			mean_pressure /= sampling_resolution * sampling_resolution;
-			tactile_state_msg_.sensors[0].values[x * cx + y] = mean_pressure;
-
-			if (visualize) {
-				mjvGeom *g = vGeoms + n_vGeom++;
-
-				mjtNum pos[3] = { d->geom_xpos[3 * geomID] - xs + x * resolution + (resolution / 2),
-					               d->geom_xpos[3 * geomID + 1] - ys + y * resolution + (resolution / 2),
-					               d->geom_xpos[3 * geomID + 2] + zs };
-				mjv_initGeom(g, mjGEOM_SPHERE, size, pos, rot, rgbaC);
-
-				if (mean_pressure > 0.0) {
-					g               = vGeoms + n_vGeom++;
-					mjtNum sizeA[3] = { 0.001, 0.001, 0.1 * mean_pressure };
-					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, rot, rgbaA);
-				}
-			}
-		}
-	}
+	render_tiles(pressure, rot, sensor_topleft);
 }
 
 void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions)
