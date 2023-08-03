@@ -238,6 +238,10 @@ void BVH::build()
 	updateNodeBounds(0, centroid_min, centroid_max);
 	// subdivide recursively
 	subdivide(0, 0, nodes_used, centroid_min, centroid_max);
+
+	bounds      = AABB();
+	bounds.bmin = bvh_node.get()[0].d0.data.aabbMin;
+	bounds.bmax = bvh_node.get()[0].d1.data.aabbMax;
 }
 
 void BVH::subdivide(uint node_idx, uint depth, uint &node_ptr, float3 &centroid_min, float3 &centroid_max)
@@ -455,16 +459,34 @@ void TLAS::build()
 	// assign TLAS leaf node to each BLAS
 	nodes_used = 1;
 	for (uint i = 0; i < blas_count; i++) {
-		node_idx[i]                               = nodes_used;
-		tlas_node[nodes_used].d0.aabbMin          = blas[i].bounds.bmin;
-		tlas_node[nodes_used].d1.aabbMax          = blas[i].bounds.bmax;
-		tlas_node[nodes_used].d1.data.blas        = i;
-		tlas_node[nodes_used].d0.data1.left_right = 0; // makes it a leaf
+		node_idx[i]                                 = nodes_used;
+		tlas_node[nodes_used].d0.aabbMin            = blas[i].bounds.bmin;
+		tlas_node[nodes_used].d1.aabbMax            = blas[i].bounds.bmax;
+		tlas_node[nodes_used].d1.data.blas          = i;
+		tlas_node[nodes_used++].d0.data1.left_right = 0; // makes it a leaf
 	}
 	// agglomerative clustering
 	int node_indices = blas_count;
 	int A            = 0;
 	int B            = findBestMatch(node_indices, A);
+
+	while (node_indices > 1) {
+		int C = findBestMatch(node_indices, B);
+		if (A == C) {
+			int node_idx_a = node_idx[A], node_idx_b = node_idx[B];
+			TLASNode &node_a = tlas_node[node_idx_a], &node_b = tlas_node[node_idx_b];
+			TLASNode &new_node           = tlas_node[nodes_used];
+			new_node.d0.data1.left_right = node_idx_a + (node_idx_b << 16);
+			new_node.d0.aabbMin          = fminf(node_a.d0.aabbMin, node_b.d0.aabbMin);
+			new_node.d1.aabbMax          = fmaxf(node_a.d1.aabbMax, node_b.d1.aabbMax);
+			node_idx[A]                  = nodes_used++;
+			node_idx[B]                  = node_idx[node_indices - 1];
+			B                            = findBestMatch(--node_indices, A);
+		} else {
+			A = B;
+			B = C;
+		}
+	}
 	// copy last remaining node to root
 	tlas_node[0] = tlas_node[node_idx[A]];
 }
@@ -508,7 +530,6 @@ void TLAS::intersect(Ray &ray)
 		}
 	}
 }
-
 } // namespace mujoco_ros::contact_surfaces::sensors
 
 using namespace mujoco_ros::contact_surfaces::sensors;
