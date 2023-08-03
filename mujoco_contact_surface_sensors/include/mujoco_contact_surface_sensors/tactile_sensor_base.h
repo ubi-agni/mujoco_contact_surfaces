@@ -47,6 +47,12 @@ using namespace MujocoSim;
 class TactileSensorBase : public SurfacePlugin
 {
 public:
+	~TactileSensorBase()
+	{
+		if (vGeoms != nullptr) {
+			delete[] vGeoms;
+		}
+	}
 	// Overlead entry point
 	virtual bool load(mjModelPtr m, mjDataPtr d);
 	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);

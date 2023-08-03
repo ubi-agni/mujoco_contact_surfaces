@@ -144,15 +144,21 @@ typedef struct ContactProperties
 	const contactType contact_type;
 	const Shape *shape;
 	const VolumeMesh<double> *vm;
-	const VolumeMeshFieldLinear<double, double> *pf;
-	const Bvh<Obb, VolumeMesh<double>> *bvh_v;
+	std::shared_ptr<const VolumeMeshFieldLinear<double, double>> pf;
+	std::shared_ptr<const Bvh<Obb, VolumeMesh<double>>> bvh_v;
 	const TriangleSurfaceMesh<double> *sm;
-	const Bvh<Obb, TriangleSurfaceMesh<double>> *bvh_s;
+	std::shared_ptr<const Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_s;
 	const double hydroelastic_modulus;
 	const double dissipation;
 	const double static_friction;
 	const double dynamic_friction;
 	const double resolution_hint;
+
+	~ContactProperties()
+	{
+		if (shape != nullptr)
+			delete shape;
+	}
 
 	ContactProperties(int geom_id, std::string geom_name, contactType contact_type, Shape *shape, VolumeMesh<double> *vm,
 	                  VolumeMeshFieldLinear<double, double> *pf, Bvh<Obb, VolumeMesh<double>> *bvh_v,
@@ -205,22 +211,22 @@ public:
 	virtual ~MujocoContactSurfacesPlugin();
 
 	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
+	virtual bool load(mjModelPtr m, mjDataPtr d) override;
+	virtual void reset() override;
 
-	virtual void passiveCallback(mjModelPtr model, mjDataPtr data);
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
+	virtual void passiveCallback(mjModelPtr model, mjDataPtr data) override;
+	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene) override;
+	virtual void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id) override;
 
 	// Called on reset
-	virtual void reset();
 	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
 	void passive_cb(const mjModel *m, mjData *d);
-	void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id);
 
 protected:
 	// Mujoco model and data pointers
 	mjModelPtr m_;
 	mjDataPtr d_;
-	bool visualizeContactSurfaces = false;
+	bool visualizeContactSurfaces  = false;
 	bool applyContactSurfaceForces = true;
 	std::vector<GeomCollisionPtr> geomCollisions;
 
@@ -235,7 +241,7 @@ private:
 	// TODO there seems to be a bug where this is not correctly parsed
 	HydroelasticContactRepresentation hydroelastic_contact_representation = HydroelasticContactRepresentation::kTriangle;
 
-	std::map<int, ContactProperties *> contactProperties;
+	std::map<int, std::shared_ptr<ContactProperties>> contactProperties;
 
 	void parseMujocoCustomFields(mjModel *m);
 	void initCollisionFunction();

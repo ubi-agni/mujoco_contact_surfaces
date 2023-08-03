@@ -36,6 +36,7 @@
 #pragma once
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
+#include <mujoco_contact_surface_sensors/bvh.h>
 
 namespace mujoco_contact_surface_sensors {
 using namespace mujoco_contact_surfaces;
@@ -48,9 +49,11 @@ public:
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
+	void render_tiles(Eigen::ArrayXXd pressure, mjtNum rot[9], mjtNum origin[3]);
 
 private:
-	double resolution;
+	int sampling_resolution = true;
+	float resolution;
 	int cx, cy;
 	// color scaling factors for tactile visualization
 	double tactile_running_scale = 3.;
