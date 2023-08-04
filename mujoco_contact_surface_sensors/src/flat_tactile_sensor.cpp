@@ -72,7 +72,7 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 	return false;
 }
 
-void FlatTactileSensor::render_tiles(Eigen::ArrayXXd pressure, mjtNum rot[9], mjtNum origin[3])
+void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum origin[3])
 {
 	if (!visualize)
 		return;
@@ -152,8 +152,8 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 	TLAS tlas(bvh, bvh_idx);
 	tlas.build();
 
-	double *pressure_raw       = pressure.data();
-	double rmean               = 1. / (sampling_resolution * sampling_resolution);
+	float *pressure_raw        = pressure.data();
+	float rmean                = 1.f / (sampling_resolution * sampling_resolution);
 	float rSampling_resolution = resolution / sampling_resolution;
 	for (int x = 0; x < cx; x++) {
 		for (int y = 0; y < cy; y++) {
