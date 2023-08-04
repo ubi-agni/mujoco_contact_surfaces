@@ -185,6 +185,9 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	double bblas = timer.elapsed();
 	if (bvh_idx == 0) {
 		benchmark_bvh.add_measure(bblas, 0., bvh_idx, 0., 0., 0., 0.);
+		tactile_state_msg_.sensors[0].values.clear();
+		tactile_state_msg_.sensors[0].values.resize(cx * cy);
+		memcpy(tactile_state_msg_.sensors[0].values.begin(), pressure.data(), cx * cy * sizeof(float));
 		render_tiles(pressure, rot, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
@@ -196,6 +199,9 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 		}
 	}
 	if (bvh_idx == 0) {
+		tactile_state_msg_.sensors[0].values.clear();
+		tactile_state_msg_.sensors[0].values.resize(cx * cy);
+		memcpy(std::data(tactile_state_msg_.sensors[0].values), pressure.data(), cx * cy * sizeof(float));
 		render_tiles(pressure, rot, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
