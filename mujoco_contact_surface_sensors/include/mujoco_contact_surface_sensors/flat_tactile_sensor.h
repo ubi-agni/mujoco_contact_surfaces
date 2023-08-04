@@ -159,7 +159,7 @@ protected:
 	void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 	void bvh_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
-	void render_tiles(Eigen::ArrayXXd pressure, mjtNum rot[9], mjtNum origin[3]);
+	void render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum origin[3]);
 
 private:
 	bool use_parallel       = true;

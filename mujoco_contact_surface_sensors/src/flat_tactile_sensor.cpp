@@ -109,7 +109,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 #endif
 }
 
-void FlatTactileSensor::render_tiles(Eigen::ArrayXXd pressure, mjtNum rot[9], mjtNum origin[3])
+void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum origin[3])
 {
 	if (!visualize)
 		return;
@@ -169,7 +169,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	BVH bvh[geomCollisions.size()];
 	int bvh_idx = 0;
 
-	Eigen::ArrayXXd pressure = Eigen::ArrayXXd::Zero(cx, cy);
+	Eigen::ArrayXXf pressure = Eigen::ArrayXXf::Zero(cx, cy);
 #ifdef BENCHMARK_TACTILE
 	timer.reset();
 	int num_tris = 0;
@@ -217,12 +217,12 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	timer.reset();
 #endif
 
-	double *pressure_raw = pressure.data();
-	double rmean         = 1. / (sampling_resolution * sampling_resolution);
+	float *pressure_raw = pressure.data();
+	float rmean         = 1. / (sampling_resolution * sampling_resolution);
 	ROS_DEBUG_STREAM_ONCE("rmean: " << rmean);
 	for (int x = 0; x < cx; x++) { // for each cell on axis x
 		for (int y = 0; y < cy; y++) { // for each cell on axis y
-			double avg_pressure = 0;
+			float avg_pressure = 0;
 			{
 // #pragma omp declare reduction (+: Eigen::ArrayXXd : omp_out += omp_in) initializer(omp_priv=Eigen::ArrayXXd::Zero(cx,
 // cy)) #pragma omp target map(tofrom : pressure_raw) map(to : x, y, t, i, j, sensor_center, rSampling_resolution, xs,
