@@ -145,6 +145,8 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 	}
 
 	if (bvh_idx == 0) {
+		tactile_state_msg_.sensor[0].resize(cx * cy);
+		memcpy(std::data(tactile_state_msg_.sensor[0].values), pressure.data(), cx * cy * sizeof(float));
 		render_tiles(pressure, rot, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
