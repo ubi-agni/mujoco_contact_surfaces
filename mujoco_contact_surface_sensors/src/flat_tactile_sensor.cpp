@@ -63,6 +63,50 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 			use_parallel = static_cast<bool>(rosparam_config_["use_parallel"]);
 		}
 
+		if (rosparam_config_.hasMember("windowing")) {
+			std::string windowing = static_cast<std::string>(rosparam_config_["windowing"]);
+
+			if (rosparam_config_.hasMember("sigma")) {
+				// direct cast to float is ambiguous, so we need to cast to double first
+				sigma = static_cast<float>(static_cast<double>(rosparam_config_["sigma"]));
+			}
+
+			if (windowing == "gauss") {
+				use_gaussian = true;
+				if (sigma == -1.0) {
+					ROS_WARN_STREAM("No sigma given for gaussian window. Falling back to default (sigma = 0.1).");
+					sigma = 0.1;
+				}
+				ROS_DEBUG_STREAM("Using gaussian window with sigma = " << sigma);
+			} else if (windowing == "tukey") {
+				use_tukey = true;
+				if (sigma == -1.0) {
+					ROS_WARN_STREAM("No sigma given for tukey window. Falling back to default (sigma = 0.3).");
+					sigma = 0.3;
+				}
+				ROS_DEBUG_STREAM("Using tukey window with sigma (alpha) = " << sigma);
+			} else {
+				ROS_WARN_STREAM("Unknown windowing function: " << windowing << ". Falling back to default (none).");
+			}
+		}
+
+		//// precompute some factors for the update loop to save time
+
+		// distance between two adjacent samples on the same axis:
+		// dist_factor = resolution/sampling_resolution
+		// distance between left edge of sensor and sample i:
+		// edgedist_i = dist_factor * i + 0.5 * dist_factor
+		// Taking the absolute distance between di and half the cell width gives the distance to the center of the cell:
+		// edgedist_i - resolution/2 <=> dist_factor * i + 0.5 * dist_factor - resolution/2 <=> dist_factor * i +
+		// sub_halfwidth
+		di_factor     = resolution / sampling_resolution;
+		sub_halfwidth = di_factor / 2.0f - resolution / 2.0f;
+
+		rmean                = 1. / (sampling_resolution * sampling_resolution);
+		rSampling_resolution = resolution / sampling_resolution;
+
+		max_dist = SQRT_2 * resolution / 2.0f;
+
 		double xs = m->geom_size[3 * geomID];
 		double ys = m->geom_size[3 * geomID + 1];
 		// std::floorl gives compiler errors, this is a known bug:
@@ -214,7 +258,6 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #else
 	tlas.build();
 #endif
-	float rSampling_resolution = resolution / sampling_resolution; // divide once to save time
 
 #ifdef BENCHMARK_TACTILE
 	int hits     = 0;
@@ -222,8 +265,21 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	timer.reset();
 #endif
 
-	float *pressure_raw = pressure.data();
-	float rmean         = 1. / (sampling_resolution * sampling_resolution);
+	/////// Precompute as much of the factors needed in the loop as possible (especially divisions) to save time
+	float *pressure_raw  = pressure.data();
+	float cell_halfwidth = resolution / 2.0f;
+
+	// Gaussian weighting
+	float rsigma_squared;
+	float factor = 1.f;
+	float rtukey = 0.f;
+	if (use_gaussian) {
+		rsigma_squared = 0.5f / (sigma * sigma);
+		factor         = 1.f / (sigma * sqrt(2.f * M_PI));
+	} else if (use_tukey) {
+		rtukey = 1.f / sigma * sampling_resolution * sampling_resolution;
+	}
+
 	ROS_DEBUG_STREAM_ONCE("rmean: " << rmean);
 	for (int x = 0; x < cx; x++) { // for each cell on axis x
 		for (int y = 0; y < cy; y++) { // for each cell on axis y
@@ -263,8 +319,41 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #ifdef BENCHMARK_TACTILE
 							hits++;
 #endif
-							// We sample points around the sensor in its receptive field and average them
-							avg_pressure += tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) * rmean;
+							float raw    = tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) * rmean;
+							float weight = 1.0f;
+
+							// Gaussian kernel
+							// g(x) = 1/(sigma*sqrt(2*pi)) * exp(-0.5*pow(x - mu, 2)/pow(sigma, 2))
+							if (use_gaussian) {
+								// Compute the 2D-distance between the sensor center and the ray
+								float dist =
+								    std::hypot(di_factor * i + sub_halfwidth, di_factor * j + sub_halfwidth) / max_dist;
+								// Compute the weight of the sample using the Gaussian function
+								weight = exp(-(dist * dist) * rsigma_squared);
+							}
+
+							// Tukey kernel (alpha = 1 -> hann window, alpha = 0 -> rectangular window)
+							// w[n] = 1/2 (1 - cos(2*pi*n/(alpha*N))), if 0 <= n <= alpha*N/2
+							// w[n] = 1, if alpha*N/2 < n <= (N/2)
+							// w[N-n] = w[n], if 0 <= n <= N/2
+							if (use_tukey) {
+								if (sampling_resolution / 2 - abs(sampling_resolution / 2 - i) <=
+								    sigma * sampling_resolution / 2) {
+									weight *= 0.5f * (1.f - cosf(2.f * M_PI *
+									                             (sampling_resolution / 2 - abs(sampling_resolution / 2 - i)) *
+									                             rtukey));
+								}
+								if (sampling_resolution / 2 - abs(sampling_resolution / 2 - j) <=
+								    sigma * sampling_resolution / 2) {
+									weight *= 0.5f * (1.f - cosf(2.f * M_PI *
+									                             (sampling_resolution / 2 - abs(sampling_resolution / 2 - j)) *
+									                             rtukey));
+								}
+								// else weight remains 1
+							}
+
+							// Add the weighted sample to the average pressure
+							avg_pressure += weight * raw;
 						}
 					}
 				}

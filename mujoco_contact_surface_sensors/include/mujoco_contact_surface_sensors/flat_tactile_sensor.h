@@ -41,6 +41,8 @@
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace mujoco_ros::contact_surfaces;
 
+const static float SQRT_2 = 1.41421356237;
+
 #ifdef BENCHMARK_TACTILE
 struct Timer
 {
@@ -170,6 +172,9 @@ protected:
 
 private:
 	bool use_parallel       = true;
+	bool use_gaussian       = false;
+	bool use_tukey          = false;
+	float sigma             = -1.0;
 	int sampling_resolution = 5; // 25 samples per cell
 	double resolution;
 	int cx, cy;
@@ -177,6 +182,12 @@ private:
 	double tactile_running_scale = 3.;
 	double tactile_current_scale = 0.;
 	Eigen::Vector3d sensor_normal;
+
+	float max_dist;
+	float di_factor;
+	float sub_halfwidth;
+	float rmean;
+	float rSampling_resolution;
 };
 
 } // namespace mujoco_ros::contact_surfaces::sensors
