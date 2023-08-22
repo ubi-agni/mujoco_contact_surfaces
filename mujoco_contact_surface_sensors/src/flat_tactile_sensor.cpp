@@ -252,8 +252,11 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 						ray.hit.t     = 1e30f;
 
 						tlas.intersect(ray);
-
-						if (ray.hit.t < 1e30f && ray.hit.t > 0.0f) {
+						// Instead of using 1e30f, we use the maximum distance to the sensor geom z-axis centroid (local
+						// frame) to prevent contacts from the wrong side of the sensor to be considered.
+						// TODO(dleins): Maybe we should move the maximum distance as a parameter to the ray intersection
+						// functions, to directly discard AABBs that are too far away and avoid more intersection tests
+						if (ray.hit.t < 1.5 * zs && ray.hit.t > 0.0f) {
 							const Eigen::Vector3d bary(1 - ray.hit.u - ray.hit.v, ray.hit.u, ray.hit.v);
 							uint tri_idx  = ray.hit.bvh_triangle & 0xFFFFF;
 							uint blas_idx = ray.hit.bvh_triangle >> 20;
