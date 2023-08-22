@@ -16,7 +16,15 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
   mujoco_contact_surfaces
   tactile_msgs
+  dynamic_reconfigure
 )
+
+generate_dynamic_reconfigure_options(
+  config/FlatTactileConfig.cfg
+)
+
+include_directories(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+
 find_package(drake REQUIRED)
 find_package(OpenMP REQUIRED)
 
@@ -78,6 +86,8 @@ target_link_libraries(${PROJECT_NAME}
   drake::drake
   OpenMP::OpenMP_CXX
 )
+
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
 if(ENABLE_TACT_BENCHMARK)
   add_subdirectory(src/benchmark)

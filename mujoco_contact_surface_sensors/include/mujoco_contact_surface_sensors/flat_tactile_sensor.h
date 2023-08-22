@@ -35,6 +35,9 @@
 
 #pragma once
 
+#include <dynamic_reconfigure/server.h>
+#include <mujoco_contact_surface_sensors/DynamicFlatTactileConfig.h>
+
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
 #include <mujoco_contact_surface_sensors/bvh.h>
 
@@ -188,6 +191,12 @@ private:
 	float sub_halfwidth;
 	float rmean;
 	float rSampling_resolution;
+
+	// Dynamic reconfigure
+	dynamic_reconfigure::Server<mujoco_contact_surface_sensors::DynamicFlatTactileConfig> dynamic_param_server;
+	void dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config, uint32_t level,
+	                          mjModelPtr m);
+	std::mutex dynamic_param_mutex;
 };
 
 } // namespace mujoco_ros::contact_surfaces::sensors

@@ -45,6 +45,65 @@ namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
 using namespace drake::geometry;
 
+void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config,
+                                             uint32_t level, mjModelPtr m)
+{
+	std::lock_guard<std::mutex> lock(dynamic_param_mutex);
+	ROS_INFO_STREAM("Reconfigure request for " << sensorName << " received.");
+
+	updatePeriod        = ros::Duration(1.0 / config.update_rate);
+	visualize           = config.visualize;
+	resolution          = config.resolution;
+	sampling_resolution = config.sampling_resolution;
+	use_parallel        = config.use_parallel;
+	sigma               = static_cast<float>(config.sigma);
+
+	//// precompute some factors for the update loop to save time
+
+	// distance between two adjacent samples on the same axis:
+	// dist_factor = resolution/sampling_resolution
+	// distance between left edge of sensor and sample i:
+	// edgedist_i = dist_factor * i + 0.5 * dist_factor
+	// Taking the absolute distance between di and half the cell width gives the distance to the center of the cell:
+	// edgedist_i - resolution/2 <=> dist_factor * i + 0.5 * dist_factor - resolution/2 <=> dist_factor * i +
+	// sub_halfwidth
+	di_factor     = resolution / sampling_resolution;
+	sub_halfwidth = di_factor / 2.0f - resolution / 2.0f;
+
+	rmean                = 1. / (sampling_resolution * sampling_resolution);
+	rSampling_resolution = resolution / sampling_resolution;
+
+	max_dist = SQRT_2 * resolution / 2.0f;
+
+	if (config.window == 1) {
+		use_gaussian = true;
+		use_tukey    = false;
+		ROS_INFO_STREAM("\tUsing gaussian window with sigma = " << sigma);
+	} else if (config.window == 2) {
+		use_gaussian = false;
+		use_tukey    = true;
+		ROS_INFO_STREAM("\tUsing tukey window with sigma (alpha) = " << sigma);
+	} else {
+		use_gaussian = false;
+		use_tukey    = false;
+		ROS_INFO_STREAM("\tUsing no window");
+	}
+
+	double xs = m->geom_size[3 * geomID];
+	double ys = m->geom_size[3 * geomID + 1];
+	// std::floorl gives compiler errors, this is a known bug:
+	// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=79700
+	cx     = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
+	cy     = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
+	vGeoms = new mjvGeom[2 * cx * cy + 50];
+	ROS_INFO_STREAM("\tResolution set to " << cx << "x" << cy);
+
+	sensor_msgs::ChannelFloat32 channel;
+	channel.values.resize(cx * cy);
+	channel.name = sensorName;
+	tactile_state_msg_.sensors.push_back(channel);
+}
+
 bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 {
 #ifdef BENCHMARK_TACTILE
@@ -106,6 +165,9 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 		rSampling_resolution = resolution / sampling_resolution;
 
 		max_dist = SQRT_2 * resolution / 2.0f;
+		// TODO: Other namespace?
+		// dynamic_param_server(ros::NodeHandle(node_handle_->getNamespace() + "/" + sensorName));
+		dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this, _1, _2, m));
 
 		double xs = m->geom_size[3 * geomID];
 		double ys = m->geom_size[3 * geomID + 1];
@@ -129,6 +191,7 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
                                         const std::vector<GeomCollisionPtr> &geomCollisions)
 {
+	std::lock_guard<std::mutex> lock(dynamic_param_mutex);
 	if (visualize) {
 		// reset the visualized geoms
 		tactile_running_scale = 0.9 * tactile_running_scale + 0.1 * tactile_current_scale;

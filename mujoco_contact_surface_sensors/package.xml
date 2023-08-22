@@ -11,6 +11,10 @@
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>dynamic_reconfigure</build_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+
   <depend>pluginlib</depend>
   <depend>mujoco_contact_surfaces</depend>
   <depend>tactile_msgs</depend>
