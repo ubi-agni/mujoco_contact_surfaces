@@ -159,7 +159,14 @@ protected:
 	void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 	void bvh_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
-	void render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum origin[3]);
+	/**
+	 * @brief Renders the tactile sensor tiles in the mujoco scene.
+	 * @param[in] pressure The pressure values to render.
+	 * @param[in] rot The rotation of the sensor.
+	 * @param[in] xpos The centroid position of the sensor in global coordinates.
+	 * @param[in] topleft The top left corner of the sensor in local coordinates.
+	 */
+	void render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum xpos[3], mjtNum topleft[3]);
 
 private:
 	bool use_parallel       = true;

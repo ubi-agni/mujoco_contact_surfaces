@@ -109,7 +109,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 #endif
 }
 
-void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum origin[3])
+void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum xpos[3], mjtNum topleft[3])
 {
 	if (!visualize)
 		return;
@@ -127,8 +127,10 @@ void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mj
 			float ps              = std::min(std::abs(mean_pressure), tactile_running_scale) / tactile_running_scale;
 			const float rgba[4]   = { ps, 0, (1.f - ps), 0.8 };
 
-			mjtNum pos[3] = { origin[0] + x * resolution + (resolution / 2), origin[1] + y * resolution + (resolution / 2),
-				               origin[2] };
+			mjtNum pos[3] = { topleft[0] + x * resolution + (resolution / 2),
+				               topleft[1] + y * resolution + (resolution / 2), topleft[2] };
+			mju_rotVecMat(pos, pos, rot);
+			mju_addTo3(pos, xpos);
 
 			mjvGeom *g = vGeoms + n_vGeom++;
 			mjv_initGeom(g, mjGEOM_BOX, size, pos, rot, rgba);
@@ -158,13 +160,10 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 
 	// Negative Z axis is defined as the normal of the flat sensor (sensor points are outside of the object and point
 	// inward)
-	float3 sensor_normal(static_cast<float>(d->geom_xmat[9 * geomID + 2]),
-	                     static_cast<float>(d->geom_xmat[9 * geomID + 5]),
-	                     static_cast<float>(-d->geom_xmat[9 * geomID + 8]));
-	float3 sensor_center(static_cast<float>(d->geom_xpos[3 * geomID]), static_cast<float>(d->geom_xpos[3 * geomID + 1]),
-	                     static_cast<float>(d->geom_xpos[3 * geomID + 2]));
+	float3 sensor_normal(static_cast<float>(-rot[2]), static_cast<float>(-rot[5]), static_cast<float>(-rot[8]));
 
-	mjtNum sensor_topleft[3] = { sensor_center[0] - xs, sensor_center[1] - ys, sensor_center[2] + zs };
+	mjtNum sensor_xpos[3]    = { d->geom_xpos[3 * geomID], d->geom_xpos[3 * geomID + 1], d->geom_xpos[3 * geomID + 2] };
+	mjtNum sensor_topleft[3] = { -xs, -ys, zs };
 
 	BVH bvh[geomCollisions.size()];
 	int bvh_idx = 0;
@@ -188,7 +187,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 		tactile_state_msg_.sensors[0].values.clear();
 		tactile_state_msg_.sensors[0].values.resize(cx * cy);
 		memcpy(tactile_state_msg_.sensors[0].values.begin(), pressure.data(), cx * cy * sizeof(float));
-		render_tiles(pressure, rot, sensor_topleft);
+		render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
 #else
@@ -202,7 +201,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 		tactile_state_msg_.sensors[0].values.clear();
 		tactile_state_msg_.sensors[0].values.resize(cx * cy);
 		memcpy(std::data(tactile_state_msg_.sensors[0].values), pressure.data(), cx * cy * sizeof(float));
-		render_tiles(pressure, rot, sensor_topleft);
+		render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
 #endif
@@ -237,10 +236,15 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 				for (int i = 0; i < sampling_resolution; i++) { // for each sample in cell on axis x
 					for (int j = 0; j < sampling_resolution; j++) { // for each sample in cell on axis y
 
-						float3 sensor_point =
-						    sensor_center +
-						    float3(-xs + x * resolution + i * rSampling_resolution + 0.5 * rSampling_resolution,
-						           -ys + y * resolution + j * rSampling_resolution + 0.5 * rSampling_resolution, 1.5 * zs);
+						mjtNum pos[3] = {
+							sensor_topleft[0] + x * resolution + i * rSampling_resolution + 0.5 * rSampling_resolution,
+							sensor_topleft[1] + y * resolution + j * rSampling_resolution + 0.5 * rSampling_resolution,
+							1.5 * zs
+						};
+						mju_rotVecMat(pos, pos, rot);
+						mju_addTo3(pos, sensor_xpos);
+
+						float3 sensor_point = float3(pos[0], pos[1], pos[2]);
 
 						Ray ray;
 						ray.d0.data.O = sensor_point;
@@ -272,7 +276,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 #endif
 	// ROS_DEBUG_STREAM("BVH BLAS: " << (bblas * 1000.) << "ms, TLAS: " << (btlas*1000.) << "ms, TR: " << (tr*1000.) <<
 	// "ms, hits: " << hits);
-	render_tiles(pressure, rot, sensor_topleft);
+	render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
 }
 
 void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions)
