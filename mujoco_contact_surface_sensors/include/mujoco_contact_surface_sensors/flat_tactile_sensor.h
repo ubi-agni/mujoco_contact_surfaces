@@ -177,6 +177,7 @@ private:
 	bool use_parallel       = true;
 	bool use_gaussian       = false;
 	bool use_tukey          = false;
+	bool use_square         = false;
 	float sigma             = -1.0;
 	int sampling_resolution = 5; // 25 samples per cell
 	double resolution;

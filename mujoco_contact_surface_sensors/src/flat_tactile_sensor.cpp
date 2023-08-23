@@ -78,14 +78,22 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 	if (config.window == 1) {
 		use_gaussian = true;
 		use_tukey    = false;
+		use_square   = false;
 		ROS_INFO_STREAM("\tUsing gaussian window with sigma = " << sigma);
 	} else if (config.window == 2) {
 		use_gaussian = false;
 		use_tukey    = true;
+		use_square   = false;
 		ROS_INFO_STREAM("\tUsing tukey window with sigma (alpha) = " << sigma);
+	} else if (config.window == 3) {
+		use_gaussian = false;
+		use_tukey    = false;
+		use_square   = true;
+		ROS_INFO_STREAM("\tUsing squared distance window");
 	} else {
 		use_gaussian = false;
 		use_tukey    = false;
+		use_square   = false;
 		ROS_INFO_STREAM("\tUsing no window");
 	}
 
@@ -97,6 +105,8 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 	cy     = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 	vGeoms = new mjvGeom[2 * cx * cy + 50];
 	ROS_INFO_STREAM("\tResolution set to " << cx << "x" << cy);
+
+	tactile_state_msg_.sensors.clear();
 
 	sensor_msgs::ChannelFloat32 channel;
 	channel.values.resize(cx * cy);
@@ -144,6 +154,9 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 					sigma = 0.3;
 				}
 				ROS_DEBUG_STREAM("Using tukey window with sigma (alpha) = " << sigma);
+			} else if (windowing == "square") {
+				use_square = true;
+				ROS_DEBUG_STREAM("Using squared distance window.");
 			} else {
 				ROS_WARN_STREAM("Unknown windowing function: " << windowing << ". Falling back to default (none).");
 			}
@@ -165,6 +178,7 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 		rSampling_resolution = resolution / sampling_resolution;
 
 		max_dist = SQRT_2 * resolution / 2.0f;
+
 		// TODO: Other namespace?
 		// dynamic_param_server(ros::NodeHandle(node_handle_->getNamespace() + "/" + sensorName));
 		dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this, _1, _2, m));
@@ -399,7 +413,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 							// w[n] = 1/2 (1 - cos(2*pi*n/(alpha*N))), if 0 <= n <= alpha*N/2
 							// w[n] = 1, if alpha*N/2 < n <= (N/2)
 							// w[N-n] = w[n], if 0 <= n <= N/2
-							if (use_tukey) {
+							else if (use_tukey) {
 								if (sampling_resolution / 2 - abs(sampling_resolution / 2 - i) <=
 								    sigma * sampling_resolution / 2) {
 									weight *= 0.5f * (1.f - cosf(2.f * M_PI *
@@ -413,6 +427,13 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 									                             rtukey));
 								}
 								// else weight remains 1
+							}
+
+							else if (use_square) {
+								// Compute the inverse of the 2D-distance between the sensor center and the ray
+								float inv_dist =
+								    1 - std::hypot(di_factor * i + sub_halfwidth, di_factor * j + sub_halfwidth) / max_dist;
+								weight = inv_dist * inv_dist;
 							}
 
 							// Add the weighted sample to the average pressure
