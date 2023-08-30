@@ -116,11 +116,6 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 
 bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 {
-#ifdef BENCHMARK_TACTILE
-	benchmark_bvh.name  = "BVH";
-	benchmark_mt.name   = "MT";
-	benchmark_proj.name = "PROJ";
-#endif
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("resolution")) {
 		resolution = static_cast<double>(rosparam_config_["resolution"]);
 
@@ -212,22 +207,7 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
 		tactile_current_scale = 0.;
 	}
 
-#ifdef BENCHMARK_TACTILE
-	visualize = false;
-	if (skip_update) {
-		return;
-	}
-	projection_update(m, d, geomCollisions);
-	mt_update(m, d, geomCollisions);
 	bvh_update(m, d, geomCollisions);
-	if (print_benchmark && ros::Time::now() - benchmark_bvh.last_report > ros::Duration(0.2)) {
-		benchmark_bvh.report();
-		benchmark_mt.report();
-		benchmark_proj.report();
-	}
-#else
-	bvh_update(m, d, geomCollisions);
-#endif
 }
 
 void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum xpos[3], mjtNum topleft[3])
@@ -290,28 +270,6 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	int bvh_idx = 0;
 
 	Eigen::ArrayXXf pressure = Eigen::ArrayXXf::Zero(cx, cy);
-#ifdef BENCHMARK_TACTILE
-	timer.reset();
-	int num_tris = 0;
-
-	for (GeomCollisionPtr gc : geomCollisions) {
-		if (gc->g1 == id or gc->g2 == id) {
-			bvh[bvh_idx] = BVH(gc->s);
-			bvh_idx++;
-			num_tris += gc->s->tri_mesh_W().num_triangles();
-		}
-	}
-
-	double bblas = timer.elapsed();
-	if (bvh_idx == 0) {
-		benchmark_bvh.add_measure(bblas, 0., bvh_idx, 0., 0., 0., 0.);
-		tactile_state_msg_.sensors[0].values.clear();
-		tactile_state_msg_.sensors[0].values.resize(cx * cy);
-		memcpy(tactile_state_msg_.sensors[0].values.begin(), pressure.data(), cx * cy * sizeof(float));
-		render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
-		return; // no contacts with surfaces in this timestep
-	}
-#else
 	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			bvh[bvh_idx] = BVH(gc->s);
@@ -325,22 +283,9 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 		render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
 		return; // no contacts with surfaces in this timestep
 	}
-#endif
 
 	TLAS tlas(bvh, bvh_idx);
-#ifdef BENCHMARK_TACTILE
-	timer.reset();
 	tlas.build();
-	double btlas = timer.elapsed();
-#else
-	tlas.build();
-#endif
-
-#ifdef BENCHMARK_TACTILE
-	int hits     = 0;
-	int num_rays = cx * cy * sampling_resolution * sampling_resolution;
-	timer.reset();
-#endif
 
 	/////// Precompute as much of the factors needed in the loop as possible (especially divisions) to save time
 	float *pressure_raw  = pressure.data();
@@ -393,11 +338,8 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 							const Eigen::Vector3d bary(1 - ray.hit.u - ray.hit.v, ray.hit.u, ray.hit.v);
 							uint tri_idx  = ray.hit.bvh_triangle & 0xFFFFF;
 							uint blas_idx = ray.hit.bvh_triangle >> 20;
-#ifdef BENCHMARK_TACTILE
-							hits++;
-#endif
-							float raw    = tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) * rmean;
-							float weight = 1.0f;
+							float raw     = tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary) * rmean;
+							float weight  = 1.0f;
 
 							// Gaussian kernel
 							// g(x) = 1/(sigma*sqrt(2*pi)) * exp(-0.5*pow(x - mu, 2)/pow(sigma, 2))
@@ -446,12 +388,6 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 			tactile_state_msg_.sensors[0].values[x + cy * y] = avg_pressure;
 		}
 	}
-#ifdef BENCHMARK_TACTILE
-	double tr = timer.elapsed();
-	benchmark_bvh.add_measure(bblas, btlas, bvh_idx, tr, hits, num_rays, num_tris);
-#endif
-	// ROS_DEBUG_STREAM("BVH BLAS: " << (bblas * 1000.) << "ms, TLAS: " << (btlas*1000.) << "ms, TR: " << (tr*1000.) <<
-	// "ms, hits: " << hits);
 	render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
 }
 
@@ -470,18 +406,11 @@ void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector
 
 	Eigen::Vector3d sensor_center(d->geom_xpos[3 * geomID], d->geom_xpos[3 * geomID + 1], d->geom_xpos[3 * geomID + 2]);
 
-#ifdef BENCHMARK_TACTILE
-	int num_tris = 0;
-#endif
-
 	std::vector<std::shared_ptr<ContactSurface<double>>> surfaces;
 
 	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			surfaces.push_back(gc->s);
-#ifdef BENCHMARK_TACTILE
-			num_tris += gc->s->tri_mesh_W().num_triangles();
-#endif
 		}
 	}
 
@@ -497,17 +426,7 @@ void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector
 	std::shared_ptr<ContactSurface<double>> surface;
 	Eigen::ArrayXXd pressure = Eigen::ArrayXXd::Zero(sampling_resolution * cx, sampling_resolution * cy);
 
-#ifdef BENCHMARK_TACTILE
-	int hits     = 0;
-	int num_rays = cx * cy * sampling_resolution * sampling_resolution * surfaces.size();
-	timer.reset();
-#pragma omp target map(tofrom                         \
-                       : pressure) map(from           \
-                                       : hits) map(to \
-                                                   : x, y, t, i, j, surfaces, sensor_center) if (use_parallel)
-#else
 #pragma omp target map(tofrom : pressure) map(to : x, y, t, i, j, surfaces, sensor_center) if (use_parallel)
-#endif
 	{
 		for (std::shared_ptr<ContactSurface<double>> surface : surfaces) {
 			// #pragma omp teams distribute parallel for collapse(5) if(use_parallel)
@@ -572,9 +491,6 @@ void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector
 									// sensor_point is not on the triangle
 									continue;
 								}
-#ifdef BENCHMARK_TACTILE
-								hits++;
-#endif
 								const Vector3<double> bary(1 - u - v, u, v);
 								pressure(x * sampling_resolution + i, y * sampling_resolution + j) =
 								    surface->tri_e_MN().Evaluate(t, bary) * surface->area(t);
@@ -585,11 +501,6 @@ void FlatTactileSensor::mt_update(const mjModel *m, mjData *d, const std::vector
 			}
 		}
 	}
-#ifdef BENCHMARK_TACTILE
-	double tr = timer.elapsed();
-	benchmark_mt.add_measure(0, 0, 0, tr, hits, num_rays, num_tris);
-	// ROS_DEBUG_STREAM("MT BLAS: " << 0 << ", TLAS: " << 0 << ", TR: " << (tr*1000.) << "ms, hits: " << hits);
-#endif
 
 	for (int x = 0; x < cx; x++) {
 		for (int y = 0; y < cy; y++) {
@@ -648,21 +559,12 @@ void FlatTactileSensor::projection_update(const mjModel *m, mjData *d,
 
 	mju_copy(rot, d->geom_xmat + 9 * id, 9);
 
-#ifdef BENCHMARK_TACTILE
-	int hits     = 0;
-	int num_rays = 0;
-	int num_tris = 0;
-	timer.reset();
-#endif
 	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			std::shared_ptr<ContactSurface<double>> s = gc->s;
 
 			// prepare caches
 			const int n = s->tri_mesh_W().num_elements();
-#ifdef BENCHMARK_TACTILE
-			num_tris += n;
-#endif
 			int t, i, st0, st1, st2, st, x, y;
 
 			// #pragma omp target map(from: pressure[0:cx][0:cy], hits) map(to: s, n, t, st0, st1, st2, st, x, y) if(false)
@@ -687,15 +589,9 @@ void FlatTactileSensor::projection_update(const mjModel *m, mjData *d,
 					int st  = std::max(st0, st1);
 					for (double a = 0; a <= 1; a += 1. / st) {
 						for (double b = 0; b <= 1; b += 1. / st2) {
-#ifdef BENCHMARK_TACTILE
-							num_rays++;
-#endif
 							const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
 							Eigen::Vector2d p = bary[0] * tpoints[0] + bary[1] * tpoints[1] + bary[2] * tpoints[2];
 							if (p[0] > 0 && p[0] < 2 * xs && p[1] > 0 && p[1] < 2 * ys) {
-#ifdef BENCHMARK_TACTILE
-								hits++;
-#endif
 								x = (int)std::floor(p[0] / res);
 								y = (int)std::floor(p[1] / res);
 								pressure[x][y].push_back(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
@@ -706,11 +602,6 @@ void FlatTactileSensor::projection_update(const mjModel *m, mjData *d,
 			}
 		}
 	}
-#ifdef BENCHMARK_TACTILE
-	float tr = timer.elapsed() * 1000;
-	benchmark_proj.add_measure(0, 0, 0, tr, hits, num_rays, num_tris);
-	// ROS_DEBUG_STREAM("PROJ BLAS: " << 0 << ", TLAS: " << 0 << ", TR: " << (tr*1000.) << "ms, hits: " << hits);
-#endif
 
 	for (int x = 0; x < cx; ++x) {
 		for (int y = 0; y < cy; ++y) {

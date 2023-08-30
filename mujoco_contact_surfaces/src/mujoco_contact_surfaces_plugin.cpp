@@ -100,13 +100,7 @@ void passive_cb_wrapper(const mjModel *m, mjData *d)
 		default_passive_cb(m, d);
 	}
 	if (instance_map.find(d) != instance_map.end()) {
-#ifdef BENCHMARK_TACTILE
-		instance_map[d]->passive_timer.reset();
 		instance_map[d]->passive_cb(m, d);
-		instance_map[d]->benchmark.add_passive(instance_map[d]->passive_timer.elapsed());
-#else
-		instance_map[d]->passive_cb(m, d);
-#endif
 	}
 }
 
@@ -235,9 +229,10 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 
 	// Parse, register and load plugins
 	XmlRpc::XmlRpcValue plugin_config;
-	if (mujoco_ros::contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader, plugin_config)) {
+	if (mujoco_ros::contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader,
+	                                                             plugin_config)) {
 		mujoco_ros::contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader,
-		                                                       plugins);
+		                                                            plugins);
 	}
 	for (const auto &plugin : plugins) {
 		if (plugin->safe_load(m, d)) {
@@ -262,9 +257,6 @@ void MujocoContactSurfacesPlugin::reset()
 int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2,
                                               mjtNum margin)
 {
-#ifdef BENCHMARK_TACTILE
-	collision_timer.reset();
-#endif
 	int t1 = m->geom_type[g1];
 	int t2 = m->geom_type[g2];
 
@@ -280,7 +272,8 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 	if (cp1 == nullptr or cp2 == nullptr or (cp1->contact_type == RIGID and cp2->contact_type == RIGID)) {
 		return defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
 	} else {
-		ROS_DEBUG_STREAM("Found CS enabled geom '" << cp1->geom_name << "' (" << g1 << ") to be colliding with " << cp2->geom_name << "(" << g2 << ")");
+		ROS_DEBUG_STREAM("Found CS enabled geom '" << cp1->geom_name << "' (" << g1 << ") to be colliding with "
+		                                           << cp2->geom_name << "(" << g2 << ")");
 	}
 
 	int n_con = applyContactSurfaceForces ? 0 : defaultCollisionFunctions[t1][t2](m, d, con, g1, g2, margin);
@@ -319,20 +312,9 @@ int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d,
 			std::swap(g1, g2);
 		}
 		GeomCollisionPtr gc(new GeomCollision(g1, g2, s.release()));
-#ifdef BENCHMARK_TACTILE
-		evaluate_timer.reset();
 		evaluateContactSurface(m, d, gc);
-		benchmark.add_evaluate(evaluate_timer.elapsed());
-		benchmark.add_num_s(1);
-#else	
-		evaluateContactSurface(m, d, gc);
-#endif
 		geomCollisions.push_back(gc);
 	}
-
-#ifdef BENCHMARK_TACTILE
-	benchmark.add_collision(collision_timer.elapsed());
-#endif
 
 	return n_con;
 }
@@ -433,8 +415,8 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 	const double stiction_tolerance = 1.0e-4; // TODO should this be hardcoded?
 	const double relative_tolerance = 1.0e-2;
 	for (GeomCollisionPtr gc : geomCollisions) {
-		int g1                 = gc->g1;
-		int g2                 = gc->g2;
+		int g1                                 = gc->g1;
+		int g2                                 = gc->g2;
 		std::shared_ptr<ContactProperties> cp1 = contactProperties[g1];
 		std::shared_ptr<ContactProperties> cp2 = contactProperties[g2];
 		const CoulombFriction<double> &geometryM_friction =
@@ -469,7 +451,6 @@ void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
 			const double vn_BqAq_W = v_BqAq_W.dot(pc.n);
 
 			const double fn = std::max(0., 1. - pc.damping * vn_BqAq_W) * (pc.fn0 - 0.001 * pc.stiffness * vn_BqAq_W);
-
 
 			if (applyContactSurfaceForces) {
 				ROS_DEBUG_STREAM("Apply forces is enabled");
@@ -667,12 +648,14 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeSpherePressureField<double>(*sphere, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp.reset(new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus, dissipation, staticFriction, dynamicFriction, resolutionHint));
+								cp.reset(new ContactProperties(id, s, SOFT, sphere, vm, pf, bvh, hydroElasticModulus,
+								                               dissipation, staticFriction, dynamicFriction, resolutionHint));
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp.reset(new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction, resolutionHint));
+								cp.reset(new ContactProperties(id, s, RIGID, sphere, sm, bvh, staticFriction, dynamicFriction,
+								                               resolutionHint));
 							}
 
 							contactProperties[id] = cp;
@@ -695,12 +678,14 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 								    MakeCylinderPressureField<double>(*cylinder, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-								cp.reset(new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus, dissipation, staticFriction, dynamicFriction, resolutionHint));
+								cp.reset(new ContactProperties(id, s, SOFT, cylinder, vm, pf, bvh, hydroElasticModulus,
+								                               dissipation, staticFriction, dynamicFriction, resolutionHint));
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp.reset(new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction, resolutionHint));
+								cp.reset(new ContactProperties(id, s, RIGID, cylinder, sm, bvh, staticFriction, dynamicFriction,
+								                               resolutionHint));
 							}
 							contactProperties[id] = cp;
 							break;
@@ -720,12 +705,13 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 								    MakeBoxPressureField<double>(*box, vm, hydroElasticModulus));
 								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
 								cp.reset(new ContactProperties(id, s, SOFT, box, vm, pf, bvh, hydroElasticModulus, dissipation,
-								                           staticFriction, dynamicFriction, resolutionHint));
+								                               staticFriction, dynamicFriction, resolutionHint));
 							} else {
 								TriangleSurfaceMesh<double> *sm =
 								    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, resolutionHint));
 								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-								cp.reset(new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction, resolutionHint));
+								cp.reset(new ContactProperties(id, s, RIGID, box, sm, bvh, staticFriction, dynamicFriction,
+								                               resolutionHint));
 							}
 							contactProperties[id] = cp;
 							break;
@@ -778,11 +764,14 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 										VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 										    MakeConvexPressureField<double>(vm, hydroElasticModulus));
 										Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
-										cp.reset(new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus, dissipation, staticFriction, dynamicFriction, resolutionHint));
+										cp.reset(new ContactProperties(id, s, SOFT, NULL, vm, pf, bvh, hydroElasticModulus,
+										                               dissipation, staticFriction, dynamicFriction,
+										                               resolutionHint));
 									} else {
 										Bvh<Obb, TriangleSurfaceMesh<double>> *bvh =
 										    new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
-										cp.reset(new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction, dynamicFriction, resolutionHint));
+										cp.reset(new ContactProperties(id, s, RIGID, NULL, sm, bvh, staticFriction,
+										                               dynamicFriction, resolutionHint));
 									}
 									contactProperties[id] = cp;
 									break;
@@ -817,7 +806,7 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 	// check if contactProperties exist for the specific geom
 	if (contactProperties.find(id) != contactProperties.end()) {
 		std::shared_ptr<ContactProperties> cp = contactProperties[id];
-		int geomType          = m->geom_type[id];
+		int geomType                          = m->geom_type[id];
 		switch (geomType) {
 			case mjGEOM_SPHERE: // sphere
 			{
@@ -833,7 +822,7 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 				} else {
 					TriangleSurfaceMesh<double> *sm =
 					    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, cp->resolution_hint));
-					
+
 					cp->sm = sm;
 					cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));
 				}
@@ -850,12 +839,12 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 					}
 					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 					    MakeCylinderPressureField<double>(*cylinder, vm, cp->hydroelastic_modulus));
-					cp->vm                            = vm;
+					cp->vm = vm;
 					cp->bvh_v.reset(new Bvh<Obb, VolumeMesh<double>>(*vm));
 				} else {
 					TriangleSurfaceMesh<double> *sm =
 					    new TriangleSurfaceMesh<double>(MakeCylinderSurfaceMesh<double>(*cylinder, cp->resolution_hint));
-					cp->sm                                     = sm;
+					cp->sm = sm;
 					cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));
 				}
 				break;
@@ -873,12 +862,12 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 					}
 					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 					    MakeBoxPressureField<double>(*box, vm, cp->hydroelastic_modulus));
-					cp->vm                            = vm;
+					cp->vm = vm;
 					cp->bvh_v.reset(new Bvh<Obb, VolumeMesh<double>>(*vm));
 				} else {
 					TriangleSurfaceMesh<double> *sm =
 					    new TriangleSurfaceMesh<double>(MakeBoxSurfaceMesh<double>(*box, cp->resolution_hint));
-					cp->sm                                     = sm;
+					cp->sm = sm;
 					cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));
 				}
 				break;
@@ -926,10 +915,10 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 							    new VolumeMesh<double>(std::move(volume_mesh_elements), std::move(volume_mesh_vertices));
 							VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
 							    MakeConvexPressureField<double>(vm, cp->hydroelastic_modulus));
-							cp->vm                            = vm;
+							cp->vm = vm;
 							cp->bvh_v.reset(new Bvh<Obb, VolumeMesh<double>>(*vm));
 						} else {
-							cp->sm                                     = sm;
+							cp->sm = sm;
 							cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));
 						}
 						break;
@@ -940,21 +929,11 @@ void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const
 	}
 }
 
-std::vector<SurfacePluginPtr> MujocoContactSurfacesPlugin::getPlugins() {
+std::vector<SurfacePluginPtr> MujocoContactSurfacesPlugin::getPlugins()
+{
 	return this->plugins;
 }
 
-#ifdef BENCHMARK_TACTILE
-void MujocoContactSurfacesPlugin::lastStageCallback(mjModelPtr model, mjDataPtr data) {
-	this->benchmark.next_step();
-	if (print_benchmark && 
-			this->benchmark.num_filled > 0 && 
-			ros::Time::now() - this->benchmark.last_report > ros::Duration(0.2)) {
-		this->benchmark.report();
-	}
-}
-#endif
-
-} // namespace mujoco_contact_surfaces
+} // namespace mujoco_ros::contact_surfaces
 
 PLUGINLIB_EXPORT_CLASS(mujoco_ros::contact_surfaces::MujocoContactSurfacesPlugin, mujoco_ros::MujocoPlugin)
