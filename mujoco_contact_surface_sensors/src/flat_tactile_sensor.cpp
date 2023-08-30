@@ -201,17 +201,13 @@ void FlatTactileSensor::internal_update(const mjModel *m, mjData *d,
                                         const std::vector<GeomCollisionPtr> &geomCollisions)
 {
 	std::lock_guard<std::mutex> lock(dynamic_param_mutex);
-	if (visualize) {
-		// reset the visualized geoms
-		tactile_running_scale = 0.9 * tactile_running_scale + 0.1 * tactile_current_scale;
-		tactile_current_scale = 0.;
-	}
-
 	bvh_update(m, d, geomCollisions);
 }
 
 void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mjtNum xpos[3], mjtNum topleft[3])
 {
+	tactile_running_scale = 0.9f * tactile_running_scale + 0.1f * tactile_current_scale;
+
 	if (!visualize)
 		return;
 
@@ -224,9 +220,8 @@ void FlatTactileSensor::render_tiles(Eigen::ArrayXXf pressure, mjtNum rot[9], mj
 		for (int y = 0; y < cy; y++) {
 			double mean_pressure = pressure(x, y);
 
-			tactile_current_scale = std::max(std::abs(mean_pressure), tactile_current_scale);
-			float ps              = std::min(std::abs(mean_pressure), tactile_running_scale) / tactile_running_scale;
-			const float rgba[4]   = { ps, 0, (1.f - ps), 0.8 };
+			float ps            = std::fmin(std::fabs(mean_pressure), tactile_running_scale) / tactile_running_scale;
+			const float rgba[4] = { ps, 0, (1.f - ps), 0.8 };
 
 			mjtNum pos[3] = { topleft[0] + x * resolution + (resolution / 2),
 				               topleft[1] + y * resolution + (resolution / 2), topleft[2] };
@@ -255,6 +250,8 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	float ys  = static_cast<float>(m->geom_size[3 * id + 1]);
 	float zs  = static_cast<float>(m->geom_size[3 * id + 2]);
 	float res = static_cast<float>(resolution);
+
+	tactile_current_scale = 0.f;
 
 	mjtNum rot[9];
 	mju_copy(rot, d->geom_xmat + 9 * id, 9);
@@ -386,6 +383,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 			}
 			pressure_raw[x + cy * y]                         = avg_pressure;
 			tactile_state_msg_.sensors[0].values[x + cy * y] = avg_pressure;
+			tactile_current_scale                            = std::fmax(std::fabs(avg_pressure), tactile_current_scale);
 		}
 	}
 	render_tiles(pressure, rot, sensor_xpos, sensor_topleft);
