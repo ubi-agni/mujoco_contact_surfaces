@@ -183,8 +183,8 @@ private:
 	double resolution;
 	int cx, cy;
 	// color scaling factors for tactile visualization
-	double tactile_running_scale = 3.;
-	double tactile_current_scale = 0.;
+	float tactile_running_scale = 3.;
+	float tactile_current_scale = 0.;
 	Eigen::Vector3d sensor_normal;
 
 	float max_dist;
