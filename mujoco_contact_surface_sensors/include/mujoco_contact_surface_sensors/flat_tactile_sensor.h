@@ -55,8 +55,6 @@ public:
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d,
 	                             const std::vector<GeomCollisionPtr> &geomCollisions) override;
-	void projection_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
-	void mt_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 	void bvh_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
 
 	/**
