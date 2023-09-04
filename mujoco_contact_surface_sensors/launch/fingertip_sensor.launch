@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="modelfile"
+    default="$(find mujoco_contact_surface_sensors)/assets/fingertip_mocap.xml" />
+
+  <rosparam file="$(find mujoco_contact_surface_sensors)/config/fingertip.yaml"
+    subst_value="true" />
+
+  <include file="$(find mujoco_ros)/launch/launch_server.launch" pass_all_args="true" >
+    <arg name="use_sim_time"       value="true" />
+  </include>
+
+</launch>
