@@ -37,6 +37,7 @@
 #include <mujoco_contact_surface_sensors/taxel_sensor.h>
 
 #include <pluginlib/class_list_macros.h>
+#include <random>
 
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
@@ -46,14 +47,39 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("taxels") && rosparam_config_.hasMember("method") &&
 	    rosparam_config_.hasMember("include_margin") && rosparam_config_.hasMember("sample_resolution")) {
-		include_margin_sq = static_cast<double>(rosparam_config_["include_margin"]);
-		include_margin_sq *= include_margin_sq;
-		sample_resolution               = static_cast<double>(rosparam_config_["sample_resolution"]);
+		include_margin    = static_cast<double>(rosparam_config_["include_margin"]);
+		include_margin_sq = include_margin * include_margin;
+		sample_resolution = static_cast<double>(rosparam_config_["sample_resolution"]);
+
+		if (not rosparam_config_.hasMember("method")) {
+			sample_method = DEFAULT;
+		} else {
+			const std::string sample_method_string = static_cast<std::string>(rosparam_config_["sample_method"]);
+			if (sample_method_string == "default") {
+				sample_method = DEFAULT;
+			} else if (sample_method_string == "area_importance") {
+				sample_method = AREA_IMPORTANCE;
+				ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors", "Sample Method AREA_IMPORTANCE");
+			} else {
+				ROS_ERROR_STREAM_NAMED("mujoco_contact_surface_sensors",
+				                       "Could not find any match for sample_method: " << sample_method_string);
+				return false;
+			}
+		}
+
+		if (rosparam_config_.hasMember("visualize_max_pressure")) {
+			max_pressure = static_cast<double>(rosparam_config_["visualize_max_pressure"]);
+		}
+
 		const std::string method_string = static_cast<std::string>(rosparam_config_["method"]);
 		if (method_string == "closest") {
 			method = CLOSEST;
 		} else if (method_string == "weighted") {
 			method = WEIGHTED;
+		} else if (method_string == "mean") {
+			method = MEAN;
+		} else if (method_string == "squared") {
+			method = SQUARED;
 		} else {
 			ROS_ERROR_STREAM_NAMED("mujoco_contact_surface_sensors",
 			                       "Could not find any match for method: " << method_string);
@@ -81,12 +107,49 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 			return false;
 		}
 
+		if (m->geom_type[geomID] == mjGEOM_MESH) {
+			mjtNum *p0 = m->geom_pos + 3 * geomID;
+			mjtNum *q0 = m->geom_quat + 4 * geomID;
+
+			if (p0[0] != 0 || p0[1] != 0 || p0[2] != 0 || q0[0] != 1 || q0[1] != 0 || q0[2] != 0 || q0[3] != 0) {
+				ROS_WARN_STREAM_NAMED("mujoco_contact_surface_sensors",
+				                      "Taxel sensor '"
+				                          << sensorName
+				                          << "' attached to a mesh geom! To ensure that the taxel poses are defined "
+				                             "relative to the loaded mesh please do NOT include a transform in the <geom> "
+				                             "tag. Use the transform in a wrapper <body> instead. Also do NOT define any "
+				                             "refpos or refquat for the mesh.");
+
+				// apply geom offset to taxel poses
+				mjMARKSTACK;
+				// int id = geomID;
+				Eigen::Matrix4d M;
+				mjtNum *R = mj_stackAlloc(d.get(), 9);
+
+				mjtNum *p = mj_stackAlloc(d.get(), 3);
+				mjtNum *q = mj_stackAlloc(d.get(), 4);
+
+				mju_negPose(p, q, p0, q0);
+
+				mju_quat2Mat(R, q);
+
+				M << R[0], R[1], R[2], p[0], R[3], R[4], R[5], p[1], R[6], R[7], R[8], p[2], 0, 0, 0, 1;
+
+				taxel_mat = M * taxel_mat;
+				// mju_printMat(p0, 1, 3);
+				// mju_printMat(q0, 1, 4);
+				// std::cout << taxel_mat.topRows<3>().transpose() << std::endl;
+				mjFREESTACK;
+			}
+		}
+
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
 		                      "Found taxel sensor '" << sensorName << "' with " << taxels.size() << " taxels.");
 		sensor_msgs::ChannelFloat32 channel;
 		channel.values.resize(taxels.size());
 		channel.name = sensorName;
 		tactile_state_msg_.sensors.push_back(channel);
+
 		return true;
 	}
 	return false;
@@ -107,50 +170,97 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 	std::vector<Vector3<double>> barys, spoints;
 	std::vector<std::shared_ptr<ContactSurface<double>>> surfaces;
 
-	for (GeomCollisionPtr gc : geomCollisions) {
-		if (gc->g1 == id or gc->g2 == id) {
-			std::shared_ptr<ContactSurface<double>> s = gc->s;
-			auto mesh                                 = s->tri_mesh_W();
+	switch (sample_method) {
+		case DEFAULT:
+			for (GeomCollisionPtr gc : geomCollisions) {
+				if (gc->g1 == id or gc->g2 == id) {
+					std::shared_ptr<ContactSurface<double>> s = gc->s;
+					auto mesh                                 = s->tri_mesh_W();
 
-			const int n_tri = mesh.num_elements();
+					const int n_tri = mesh.num_elements();
 
-			for (int t = 0; t < n_tri; ++t) {
-				std::vector<Eigen::Vector3d> vertices;
-				auto element = mesh.element(t);
-				for (int i = 0; i < element.num_vertices(); ++i) {
-					int v                     = element.vertex(i);
-					const Vector3<double> &vp = mesh.vertex(v);
-					vertices.push_back(vp);
-				}
-				// Sample points on the triangle
-				int st0 = (int)((vertices[1] - vertices[0]).norm() / sample_resolution) + 1;
-				int st1 = (int)((vertices[2] - vertices[0]).norm() / sample_resolution) + 1;
-				int st2 = (int)((vertices[2] - vertices[0]).norm() / sample_resolution) + 1;
-				int st  = std::max(st0, st1);
-				for (double a = 0; a <= 1; a += 1. / st) {
-					for (double b = 0; b <= 1; b += 1. / st2) {
-						const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
-						Eigen::Vector3d p = bary[0] * vertices[0] + bary[1] * vertices[1] + bary[2] * vertices[2];
-						// Cache sampled points on the contact surface
-						barys.push_back(bary);
-						spoints.push_back(p);
-						surfaces.push_back(s);
-						ts.push_back(t);
+					for (int t = 0; t < n_tri; ++t) {
+						std::vector<Eigen::Vector3d> vertices;
+						auto element = mesh.element(t);
+						for (int i = 0; i < element.num_vertices(); ++i) {
+							int v                     = element.vertex(i);
+							const Vector3<double> &vp = mesh.vertex(v);
+							vertices.push_back(vp);
+						}
+						// Sample points on the triangle
+						int st0 = (int)((vertices[1] - vertices[0]).norm() / sample_resolution) + 1;
+						int st1 = (int)((vertices[2] - vertices[0]).norm() / sample_resolution) + 1;
+						int st2 = (int)((vertices[2] - vertices[0]).norm() / sample_resolution) + 1;
+						int st  = std::max(st0, st1);
+						for (double a = 0; a <= 1; a += 1. / st) {
+							for (double b = 0; b <= 1; b += 1. / st2) {
+								const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
+								Eigen::Vector3d p = bary[0] * vertices[0] + bary[1] * vertices[1] + bary[2] * vertices[2];
+								// Cache sampled points on the contact surface
+								barys.push_back(bary);
+								spoints.push_back(p);
+								surfaces.push_back(s);
+								ts.push_back(t);
+							}
+						}
 					}
 				}
 			}
-		}
+			break;
+		case AREA_IMPORTANCE:
+			// Class variables?
+			std::default_random_engine generator;
+			std::uniform_real_distribution<double> distribution(0.0, 1.0);
+			for (GeomCollisionPtr gc : geomCollisions) {
+				if (gc->g1 == id or gc->g2 == id) {
+					std::shared_ptr<ContactSurface<double>> s = gc->s;
+					auto mesh                                 = s->tri_mesh_W();
+
+					double area_resolution = sample_resolution * mesh.total_area();
+					double area            = 0;
+					double at              = 0;
+
+					const int n_tri = mesh.num_elements();
+
+					for (int t = 0; t < n_tri; ++t) {
+						auto element = mesh.element(t);
+						std::vector<Eigen::Vector3d> vertices;
+						at += mesh.area(t);
+						while (area < at) {
+							area += area_resolution;
+							double u0 = distribution(generator);
+							double u1 = distribution(generator);
+
+							double a = 1.0 - sqrt(u0);
+							double b = (1.0 - a) * u1;
+
+							const Vector3<double> bary(a, (1 - a) * (1 - b), (1 - a) * b);
+							Eigen::Vector3d p = bary[0] * mesh.vertex(element.vertex(0)) +
+							                    bary[1] * mesh.vertex(element.vertex(1)) +
+							                    bary[2] * mesh.vertex(element.vertex(2));
+							// Cache sampled points on the contact surface
+							barys.push_back(bary);
+							spoints.push_back(p);
+							surfaces.push_back(s);
+							ts.push_back(t);
+						}
+					}
+				}
+			}
+			break;
 	}
+
 	int m = spoints.size();
 	int n = taxels.size();
 
-	const float red[4]  = { 1, 0, 0, 1 };
-	const float blue[4] = { 0, 0, 1, 1 };
-	mjtNum size[3]      = { 0.001, 0.001, 0.01 };
-	mjtNum sizeS[3]     = { 0.001, 0.001, 0.001 };
+	const float red[4]   = { 1, 0, 0, 1 };
+	const float blue[4]  = { 0, 0, 1, 1 };
+	const float green[4] = { 0, 1, 0, 1 };
+	// mjtNum size[3]      = { 0.001, 0.001, 0.01 };
+	mjtNum sizeS[3]  = { 0.0005, 0.0005, 0.0005 };
+	mjtNum sizeSP[3] = { 0.0001, 0.0001, 0.0001 };
 	mjtNum pos[3], posS[3];
 	mjtNum rot[9];
-
 	if (m > 0) {
 		// Compute taxel positions at the current sensor geom position
 		Eigen::Matrix4d M;
@@ -191,34 +301,31 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 						Vector3<double> normal = s->face_normal(t);
 
 						for (int h = 0; h < 3; ++h) {
-							pos[h]     = taxels_at_M3(h, i);
-							posS[h]    = surface_points(h, j);
-							rot[h + 6] = normal[h];
-							rot[h + 3] = 0; // s->centroid(t)[h] - pos[h];
+							pos[h]  = taxels_at_M3(h, i);
+							posS[h] = surface_points(h, j);
 						}
-						// mju_normalize3(rot + 3);
-						if (normal[0] > 0.95) {
-							rot[4] = 1;
-						} else {
-							rot[3] = 1;
-						}
-						mju_cross(rot, rot + 3, rot + 6);
+
 						initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
 					}
 
 					// If computed closest surface point is in margin, compute pressure at that point
 					if (distance < include_margin_sq) {
-						double pressure                         = s->tri_e_MN().Evaluate(t, bary) * s->area(t);
+						double pressure                         = s->tri_e_MN().Evaluate(t, bary);
 						tactile_state_msg_.sensors[0].values[i] = pressure;
 						if (visualize && std::abs(pressure) > 1e-6) {
 							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
-							size[2] = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
-							initVGeom(mjGEOM_ARROW, size, pos, rot, red);
-							initVGeom(mjGEOM_SPHERE, sizeS, posS, NULL, blue);
-						}
+							initVGeom(mjGEOM_SPHERE, sizeSP, posS, NULL, green);
+							if (visualize) {
+								float scale          = std::min(std::max(pressure, 0.0), max_pressure) / max_pressure;
+								const float color[4] = { scale, 0, 1.0f - scale, 1 };
+								mjtNum s             = 0.0005 + scale * 0.002;
+								mjtNum size[3]       = { s, s, s };
+								initVGeom(mjGEOM_SPHERE, size, pos, NULL, color);
+							}
 
-					} else {
-						tactile_state_msg_.sensors[0].values[i] = 0;
+						} else {
+							tactile_state_msg_.sensors[0].values[i] = 0;
+						}
 					}
 				}
 				break;
@@ -241,7 +348,7 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 							int t                                     = ts[j];
 							Vector3<double> bary                      = barys[j];
 							double w                                  = include_margin_sq - dist(i, j);
-							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary) * s->area(t));
+							double p                                  = w * std::abs(s->tri_e_MN().Evaluate(t, bary));
 							pressure += p;
 							ws += w;
 							if (visualize) {
@@ -249,31 +356,102 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 								for (int h = 0; h < 3; ++h) {
 									posS[h] = surface_points(h, j);
 								}
-								initVGeom(mjGEOM_SPHERE, sizeS, posS, NULL, blue);
+								initVGeom(mjGEOM_SPHERE, sizeSP, posS, NULL, green);
 							}
 						}
 					}
 					if (ws > 0) {
-						// normal /= pressure;
-						pressure /= ws;
 						tactile_state_msg_.sensors[0].values[i] = pressure;
 						if (visualize) {
-							tactile_current_scale = std::max(std::abs(pressure), tactile_current_scale);
-							size[2] = std::min(std::abs(pressure), tactile_running_scale) / tactile_running_scale / 50.;
 							for (int h = 0; h < 3; ++h) {
-								pos[h]     = taxels_at_M3(h, i);
-								rot[h + 6] = normal[h];
-								rot[h + 3] = 0;
+								pos[h] = taxels_at_M3(h, i);
 							}
-							if (normal[0] > 0.95) {
-								rot[4] = 1;
-							} else {
-								rot[3] = 1;
-							}
-							mju_normalize3(rot + 6);
-							mju_cross(rot, rot + 3, rot + 6);
-							initVGeom(mjGEOM_ARROW, size, pos, rot, red);
+							float scale          = std::min(std::max(pressure, 0.0), max_pressure) / max_pressure;
+							const float color[4] = { scale, 0, 1.0f - scale, 1 };
+							mjtNum s             = 0.0005 + scale * 0.002;
+							mjtNum size[3]       = { s, s, s };
+							initVGeom(mjGEOM_SPHERE, size, pos, NULL, color);
 						}
+					}
+				}
+			case MEAN:
+				for (int i = 0; i < n; ++i) {
+					double ws       = 0;
+					double pressure = 0;
+					Vector3<double> normal(0, 0, 0);
+
+					if (visualize) {
+						for (int h = 0; h < 3; ++h) {
+							pos[h] = taxels_at_M3(h, i);
+						}
+						initVGeom(mjGEOM_SPHERE, sizeSP, pos, NULL, red);
+					}
+
+					for (int j = 0; j < m; ++j) {
+						if (dist(i, j) < include_margin_sq) {
+							std::shared_ptr<ContactSurface<double>> s = surfaces[j];
+							int t                                     = ts[j];
+							Vector3<double> bary                      = barys[j];
+							double p                                  = std::abs(s->tri_e_MN().Evaluate(t, bary));
+							pressure += p;
+							ws += 1;
+							if (visualize) {
+								normal += p * s->face_normal(t);
+								for (int h = 0; h < 3; ++h) {
+									posS[h] = surface_points(h, j);
+								}
+								initVGeom(mjGEOM_SPHERE, sizeSP, posS, NULL, green);
+							}
+						}
+					}
+					if (ws > 0) {
+						tactile_state_msg_.sensors[0].values[i] = pressure;
+						if (visualize) {
+							for (int h = 0; h < 3; ++h) {
+								pos[h] = taxels_at_M3(h, i);
+							}
+							float scale          = std::min(std::max(pressure, 0.0), max_pressure) / max_pressure;
+							const float color[4] = { scale, 0, 1.0f - scale, 1 };
+							mjtNum s             = 0.0005 + scale * 0.002;
+							mjtNum size[3]       = { s, s, s };
+							initVGeom(mjGEOM_SPHERE, size, pos, NULL, color);
+						}
+					}
+				}
+			case SQUARED:
+				for (int i = 0; i < n; ++i) {
+					double ws       = 0;
+					double pressure = 0;
+					for (int j = 0; j < m; ++j) {
+						if (dist(i, j) < include_margin_sq) {
+							std::shared_ptr<ContactSurface<double>> s = surfaces[j];
+							int t                                     = ts[j];
+							Vector3<double> bary                      = barys[j];
+							double w = pow(std::max(0.0, include_margin - sqrt(dist(i, j))), 2);
+							double p = w * std::abs(s->tri_e_MN().Evaluate(t, bary));
+							pressure += p;
+							ws += 1;
+							if (visualize) {
+								for (int h = 0; h < 3; ++h) {
+									posS[h] = surface_points(h, j);
+								}
+								initVGeom(mjGEOM_SPHERE, sizeSP, posS, NULL, green);
+							}
+						}
+					}
+					if (ws > 0) {
+						pressure *= sample_resolution;
+						tactile_state_msg_.sensors[0].values[i] = pressure;
+					}
+					if (visualize) {
+						for (int h = 0; h < 3; ++h) {
+							pos[h] = taxels_at_M3(h, i);
+						}
+						float scale          = std::min(std::max(pressure, 0.0), max_pressure) / max_pressure;
+						const float color[4] = { scale, 0, 1.0f - scale, 1 };
+						mjtNum s             = 0.0005 + scale * 0.002;
+						mjtNum size[3]       = { s, s, s };
+						initVGeom(mjGEOM_SPHERE, size, pos, NULL, color);
 					}
 				}
 		}
@@ -285,13 +463,16 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 		    data->geom_xmat[9 * id + 7], data->geom_xmat[9 * id + 8], data->geom_xpos[3 * id + 2], 0, 0, 0, 1;
 		Eigen::Matrix<double, 4, Eigen::Dynamic> taxels_at_M  = M * taxel_mat;
 		Eigen::Matrix<double, 3, Eigen::Dynamic> taxels_at_M3 = taxels_at_M.topRows<3>();
+
 		// If there are no sampled points on the surface fill the sensor message with zeros
 		for (int i = 0; i < n; ++i) {
 			tactile_state_msg_.sensors[0].values[i] = 0;
-			pos[0]                                  = taxels_at_M3(0, i);
-			pos[1]                                  = taxels_at_M3(1, i);
-			pos[2]                                  = taxels_at_M3(2, i);
-			initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
+			if (visualize) {
+				pos[0] = taxels_at_M3(0, i);
+				pos[1] = taxels_at_M3(1, i);
+				pos[2] = taxels_at_M3(2, i);
+				initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, blue);
+			}
 		}
 	}
 }
