@@ -74,7 +74,15 @@ enum TaxelMethod
 {
 	// For each taxel find the closest point sampled on the contact surface and compute pressure value at that point
 	CLOSEST,
-	WEIGHTED
+	WEIGHTED,
+	MEAN,
+	SQUARED
+};
+
+enum SampleMethod
+{
+	DEFAULT,
+	AREA_IMPORTANCE
 };
 
 class TaxelSensor : public TactileSensorBase
@@ -92,14 +100,17 @@ private:
 	Eigen::Matrix<double, 4, Eigen::Dynamic> taxel_mat;
 	// Distance margin: Determines how far away surface points can be to a taxel position to still be included in the
 	// sensor value computation
-	double include_margin_sq;
+	double include_margin, include_margin_sq;
 	// Resolution on how dense points are sampled on the contact surface
 	double sample_resolution;
 	// Method to compute sensor values
 	TaxelMethod method;
+	SampleMethod sample_method;
 	// color scaling factors for tactile visualization
 	double tactile_running_scale = 3.;
 	double tactile_current_scale = 0.;
+
+	double max_pressure = 0.04;
 };
 
 } // namespace mujoco_ros::contact_surfaces::sensors
