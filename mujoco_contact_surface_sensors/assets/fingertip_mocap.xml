@@ -1,0 +1,76 @@
+<mujoco model="cnc measure">
+    <option collision="all" timestep="0.001" gravity="0 0 -0" cone="elliptic" />
+    <compiler angle="radian" />
+    <statistic extent="1.5" meansize=".05" />
+    <option timestep="0.001" jacobian="sparse" gravity="0 0 0" />
+    <size nconmax="3000" njmax="4000" />
+    <visual>
+        <rgba haze="0.15 0.25 0.35 1" />
+        <quality shadowsize="4096" />
+        <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+        <scale forcewidth="0.001" />
+    </visual>
+
+    <custom>
+        <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
+        <text name="cs::HydroelasticContactRepresentation" data="kTriangle" />
+        <numeric name="cs::VisualizeSurfaces" data="0" />
+        <!-- If cs::ApplyContactSurfaceForces is 0 Contact Surfaces are only computed for tactile
+        sensors and standard mujoco contacts are used to compute physics -->
+        <numeric name="cs::ApplyContactSurfaceForces" data="1" />
+        <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
+        A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
+        A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
+        <numeric name="cs::box_geom" data="0 1.0 0.01 0.0 0.0" />       
+        <numeric name="cs::fingertip_geom" data="5e4 5.0 0.0 0.0 0.0" />
+
+    </custom>
+
+    <visual>
+        <headlight ambient="0.4 0.4 0.4" diffuse="0.4 0.4 0.4" specular="0.0 0.0 0.0" active="1" />
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.6 0.6 0.6" rgb2="0 0 0" width="512"
+            height="512" />
+        <texture builtin="checker" height="512" name="texplane" rgb1=".2 .3 .4" rgb2=".1 .15 .2"
+            type="2d" width="512" />
+        <material name="MatPlane" reflectance="0.05" shininess="0.01" specular="0.01"
+            texrepeat="1 1" texture="texplane" texuniform="true" />
+        <mesh name="ubi_tip_collision"   file="meshes/ubi_tip_collision.stl" scale="0.001 0.001 0.001"/>
+        
+    </asset>
+
+    <worldbody>
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+            dir="0 0 -1" castshadow="false" />
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+        <geom name="ground_plane" type="plane" size="5 5 10" material="MatPlane" rgba="1 1 1 1" />
+    </worldbody>
+
+    <worldbody>
+        <body name="box_body">
+            <geom name="box_geom" type="box" pos="0 0 0.025" size="0.025 0.025 0.025" rgba="0.5 0.5 0.5 0.4" />
+        </body>
+
+
+        <body name="fingertip_body" pos="-0.02 0 0.07" euler="0 2.356194490192345 1.5707963267948966">
+            <freejoint/>
+            <geom name="fingertip_geom" type="mesh" mesh="ubi_tip_collision" rgba="0.5 0.5 0.5 0.4"/>
+        </body>
+
+        <body name="mocap" mocap="true" pos="-0.02 0 0.07" euler="0 2.356194490192345 1.5707963267948966">
+            <geom type="cylinder" size="0.01 0.018" rgba="1.0 0 0 0.001" contype="0" conaffinity="0" pos="-0.00003468 0.00118940 0.01668578" /> 
+        </body>
+
+
+
+    </worldbody>
+
+    <equality>
+        <weld body1="mocap" body2="fingertip_body" active="true" />
+    </equality>
+
+ 
+
+</mujoco>
