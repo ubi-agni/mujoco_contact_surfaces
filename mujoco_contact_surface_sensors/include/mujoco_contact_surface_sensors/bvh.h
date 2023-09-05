@@ -154,6 +154,27 @@ struct AABB
 	}
 };
 
+inline float IntersectAABB(const Ray &ray, const float3 bmin, const float3 bmax)
+{
+	// "slab test"
+	float tx1  = (bmin.x - ray.d0.data.O.x) * ray.d2.data.rD.x;
+	float tx2  = (bmax.x - ray.d0.data.O.x) * ray.d2.data.rD.x;
+	float tmin = std::min(tx1, tx2);
+	float tmax = std::max(tx1, tx2);
+	float ty1  = (bmin.y - ray.d0.data.O.y) * ray.d2.data.rD.y;
+	float ty2  = (bmax.y - ray.d0.data.O.y) * ray.d2.data.rD.y;
+	tmin       = std::max(tmin, std::min(ty1, ty2));
+	tmax       = std::min(tmax, std::max(ty1, ty2));
+	float tz1  = (bmin.z - ray.d0.data.O.z) * ray.d2.data.rD.z;
+	float tz2  = (bmax.z - ray.d0.data.O.z) * ray.d2.data.rD.z;
+	tmin       = std::max(tmin, std::min(tz1, tz2));
+	tmax       = std::min(tmax, std::max(tz1, tz2));
+	if (tmax >= tmin && tmin < ray.hit.t && tmax > 0)
+		return tmin;
+	else
+		return 1e30f;
+}
+
 struct BVHNode
 {
 	union
