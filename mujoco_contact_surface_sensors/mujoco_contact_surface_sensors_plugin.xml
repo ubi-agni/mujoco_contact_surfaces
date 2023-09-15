@@ -15,4 +15,12 @@
       Taxel contact sensor based on mujoco contact surfaces.
     </description>
   </class>
+  <class
+    name="mujoco_contact_surface_sensors/CurvedSensor"
+    type="mujoco_ros::contact_surfaces::sensors::CurvedSensor"
+    base_class_type="mujoco_ros::contact_surfaces::SurfacePlugin">
+    <description>
+      Curved contact sensor based on mujoco contact surfaces.
+    </description>
+  </class>
 </library>
