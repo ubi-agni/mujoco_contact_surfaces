@@ -52,6 +52,7 @@ add_library(${PROJECT_NAME}
   src/tactile_sensor_base.cpp
   src/flat_tactile_sensor.cpp
   src/taxel_sensor.cpp
+  src/curved_sensor.cpp
   src/bvh.cpp
 )
 
