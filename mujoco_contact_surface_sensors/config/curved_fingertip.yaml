@@ -9,7 +9,7 @@ MujocoPlugins:
       topicName: "/myrmex_fingertip",
       updateRate: 4.0,
       visualize: True,
-      visualize_max_pressure: 0.000000003,
+      visualize_max_pressure: 0.000005,
       include_margin: 0.006,
       method: "squared",
       sample_method: "area_importance",
