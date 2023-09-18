@@ -8,8 +8,7 @@
     subst_value="true" />
 
   <include file="$(find mujoco_ros)/launch/launch_server.launch" pass_all_args="true" >
-    <arg name="use_sim_time"       value="true" />
-    <arg name="debug_server" value="true" />
+    <arg name="use_sim_time"       value="true" />    
     <arg name="unpause" value="true" />
   </include>
 

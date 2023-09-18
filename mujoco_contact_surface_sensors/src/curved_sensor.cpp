@@ -286,7 +286,6 @@ bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
 									added = true;
 								}
 								surface_idx[i].push_back(close_points_idx.size() - 1);
-								// TODO * area
 								surface_weight[i].push_back(pow(std::max(0.0, include_margin - sqrt(dist(i, j))), 2) *
 								                            sareas[j]);
 							}
@@ -330,7 +329,7 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 	BVH bvh[geomCollisions.size()];
 	int bvh_idx = 0;
 	std::vector<double> pressure(n);
-
+	
 	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			bvh[bvh_idx] = BVH(gc->s);
@@ -345,7 +344,6 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 	} else {
 		TLAS tlas(bvh, bvh_idx);
 		tlas.build();
-
 		for (int i = 0; i < n; ++i) {
 			pressure[i] = 0;
 			for (int j0 = 0; j0 < surface_idx[i].size(); ++j0) {
@@ -354,11 +352,11 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 				float3 normal =
 				    float3(surface_normal_at_M3(0, j), surface_normal_at_M3(1, j), surface_normal_at_M3(2, j));
 				float3 surface_point =
-				    float3(surface_at_M3(0, j), surface_at_M3(1, j), surface_at_M3(2, j)) + 0.01 * normal;
-		
+				    float3(surface_at_M3(0, j), surface_at_M3(1, j), surface_at_M3(2, j));
+
 				Ray ray;
-				ray.d0.data.O = surface_point;
-				ray.d1.data.D = normal;
+				ray.d0.data.O = surface_point + normal * 1e-8;
+				ray.d1.data.D = -normal;
 				ray.hit.t     = 1e30f;
 
 				tlas.intersect(ray);
@@ -368,7 +366,7 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 				// intersection functions, to directly discard AABBs that are too far away and avoid more
 				// intersection tests
 
-				if (ray.hit.t < 0.05f && ray.hit.t > 0.0f) {
+				if (ray.hit.t < 1e30f && ray.hit.t > 0.0f) {
 					const Eigen::Vector3d bary(1 - ray.hit.u - ray.hit.v, ray.hit.u, ray.hit.v);
 					uint tri_idx  = ray.hit.bvh_triangle & 0xFFFFF;
 					uint blas_idx = ray.hit.bvh_triangle >> 20;

@@ -53,7 +53,7 @@ void IntersectTriangle(Ray &ray, const Triangle &tri, const uint bvh_triangle)
 	const float3 edge2 = tri.vertex2 - tri.vertex0;
 	const float3 h     = cross(ray.d1.data.D, edge2);
 	const float a      = dot(edge1, h);
-	if (std::fabs(a) < 1e-5f)
+	if (std::fabs(a) < 1e-10f)
 		return; // parallel to triangle
 	const float f  = 1.0f / a;
 	const float3 s = ray.d0.data.O - tri.vertex0;
