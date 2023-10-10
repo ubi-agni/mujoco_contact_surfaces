@@ -256,9 +256,7 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 	mjtNum rot[9];
 	mju_copy(rot, d->geom_xmat + 9 * id, 9);
 
-	// Negative Z axis is defined as the normal of the flat sensor (sensor points are outside of the object and point
-	// inward)
-	float3 sensor_normal(static_cast<float>(-rot[2]), static_cast<float>(-rot[5]), static_cast<float>(-rot[8]));
+	float3 sensor_normal(static_cast<float>(rot[2]), static_cast<float>(rot[5]), static_cast<float>(rot[8]));
 
 	mjtNum sensor_xpos[3]    = { d->geom_xpos[3 * geomID], d->geom_xpos[3 * geomID + 1], d->geom_xpos[3 * geomID + 2] };
 	mjtNum sensor_topleft[3] = { -xs, -ys, zs };
@@ -321,9 +319,11 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 
 						float3 sensor_point = float3(pos[0], pos[1], pos[2]);
 
+						// Negative Z axis is defined as the normal of the ray (points are outside of the object and point
+						// inward)
 						Ray ray;
-						ray.d0.data.O = sensor_point;
-						ray.d1.data.D = sensor_normal;
+						ray.d0.data.O = sensor_point + sensor_normal * 1e-8;
+						ray.d1.data.D = -sensor_normal;
 						ray.hit.t     = 1e30f;
 
 						tlas.intersect(ray);
