@@ -48,7 +48,7 @@
     </body> -->
     <body name="body_myrmex" pos="0 0.0 0.0" >
 
-    <geom name="myrmex_foam" type="box" pos="0 0 0.033" size="0.2 0.2 0.02" rgba="0.5 0.5 0.5 0.5" euler="180 0 0"/>
+    <geom name="myrmex_foam" type="box" pos="0 0 0.033" size="0.2 0.2 0.02" rgba="0.5 0.5 0.5 0.5" euler="0 0 0"/>
 
     </body>
   </worldbody>
