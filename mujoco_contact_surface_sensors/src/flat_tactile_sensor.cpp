@@ -48,6 +48,16 @@ using namespace drake::geometry;
 void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config,
                                              uint32_t level, mjModelPtr m)
 {
+	// When initializing fetch current config instead of overriding
+	if (level == -1) {
+		config.update_rate         = 1.0 / updatePeriod.toSec();
+		config.visualize           = visualize;
+		config.resolution          = resolution;
+		config.sampling_resolution = sampling_resolution;
+		config.use_parallel        = use_parallel;
+		config.sigma               = sigma;
+		return;
+	}
 	std::lock_guard<std::mutex> lock(dynamic_param_mutex);
 	ROS_INFO_STREAM("Reconfigure request for " << sensorName << " received.");
 
