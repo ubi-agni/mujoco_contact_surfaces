@@ -51,7 +51,7 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 		include_margin_sq = include_margin * include_margin;
 		sample_resolution = static_cast<double>(rosparam_config_["sample_resolution"]);
 
-		if (not rosparam_config_.hasMember("method")) {
+		if (not rosparam_config_.hasMember("sample_method")) {
 			sample_method = DEFAULT;
 		} else {
 			const std::string sample_method_string = static_cast<std::string>(rosparam_config_["sample_method"]);
