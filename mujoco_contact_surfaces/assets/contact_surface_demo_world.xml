@@ -1,0 +1,75 @@
+<mujoco model="contact_surface_demo">
+  <option collision="all" timestep="0.001" gravity="0 0 -0" cone="elliptic" />
+  <statistic extent="1.5" meansize=".05" />
+  <option timestep="0.001" jacobian="sparse" gravity="0 0 0" />
+  <size nconmax="3000" njmax="4000" />
+  <visual>
+    <rgba haze="0.15 0.25 0.35 1" />
+    <quality shadowsize="4096" />
+    <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+    <scale forcewidth="0.001" />
+  </visual>
+
+  <custom>
+    <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
+    <text name="cs::HydroelasticContactRepresentation" data="kTriangle" />
+    <numeric name="cs::VisualizeSurfaces" data="1" />
+    <!-- If cs::ApplyContactSurfaceForces is 0 Contact Surfaces are only computed for tactile
+      sensors and standard mujoco contacts are used to compute physics -->
+    <numeric name="cs::ApplyContactSurfaceForces" data="0" />
+    <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
+      A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
+      A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
+    <numeric name="cs::box_geom" data="2.5e6 5.0 0 0.0 0.0" />
+    <numeric name="cs::sphere_geom" data="5e6 1.0 0.005 0.3 0.3" />
+    <numeric name="cs::cylinder0_geom" data="7.5e6 5.0 0.005 0.0 0.0" />
+    <numeric name="cs::cylinder1_geom" data="7.5e6 5.0 0.005 0.0 0.0" />
+
+  </custom>
+
+  <visual>
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.4 0.4 0.4" specular="0.0 0.0 0.0" active="1" />
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="1 1 1" width="512"
+      height="512" />
+  </asset>
+
+  <worldbody>
+    <body name="box_body">
+      <geom name="box_geom" type="box" pos="0 0 0.025" size="0.025 0.025 0.025"
+        rgba="0.0 0.0 1.0 0.4" />
+    </body>
+
+    <body name="cylinder0_body">
+      <geom name="cylinder0_geom" type="cylinder" pos="0 0 0.13" size="0.01 0.015"
+        rgba="1.0 0.0 0.0 0.4" />
+    </body>
+
+    <body name="cylinder1_body">
+      <geom name="cylinder1_geom" type="cylinder" pos="0 0.02 0.08" size="0.01 0.015" euler="90 0 0"
+        rgba="1.0 0.0 0.0 0.4" />
+    </body>
+
+
+    <body name="sphere_body" pos="0 0 0.07">
+      <joint type="slide" />
+      <!-- <freejoint/> -->
+      <geom name="sphere_geom" type="sphere" rgba="0.0 1.0 0.0 0.4" size="0.015" />
+    </body>
+
+    <body name="mocap" mocap="true" pos="0 0 0.07">
+      <!-- <joint type="slide" /> -->
+      <geom type="sphere" size="0.02" rgba="0.0 0 0 0.000001" contype="0" conaffinity="0"/>
+    </body>
+
+
+  </worldbody>
+
+  <equality>
+    <weld body1="mocap" body2="sphere_body" active="true" />
+  </equality>
+
+
+</mujoco>
