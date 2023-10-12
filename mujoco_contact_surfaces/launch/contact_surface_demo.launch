@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="modelfile"   default="$(find mujoco_contact_surfaces)/assets/contact_surface_demo_world.xml"  />
+  <arg name="console_config_file"  default="$(find mujoco_contact_surfaces)/rosconsole.config" />
+
+  <rosparam file="$(find mujoco_contact_surfaces)/config/contact_surface_demo_config.yaml" subst_value="true" />
+
+  <include file="$(find mujoco_ros)/launch/launch_server.launch" pass_all_args="true" >
+    <arg name="use_sim_time"        value="true" />
+    <arg name="unpause"        value="true" />
+    <arg name="headless"             value="false" />
+  </include>
+
+  <node pkg="mujoco_contact_surfaces" name="contact_surface_demo" type="contact_surface_demo.py" output="screen"/> 
+</launch>

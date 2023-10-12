@@ -1,0 +1,3 @@
+MujocoPlugins:
+  - type: mujoco_ros_mocap/MocapPlugin
+  - type: mujoco_contact_surfaces/MujocoContactSurfacesPlugin
