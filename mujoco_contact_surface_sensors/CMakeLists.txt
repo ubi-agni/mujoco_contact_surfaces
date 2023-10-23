@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 generate_dynamic_reconfigure_options(
-  config/FlatTactileConfig.cfg
+  config/DynamicFlatTactile.cfg
 )
 
 include_directories(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)

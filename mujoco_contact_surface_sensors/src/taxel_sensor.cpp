@@ -42,7 +42,7 @@ namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
 using namespace drake::geometry;
 
-bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
+bool TaxelSensor::load(const mjModel *m, mjData *d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("taxels") && rosparam_config_.hasMember("method") &&
 	    rosparam_config_.hasMember("include_margin") && rosparam_config_.hasMember("sample_resolution")) {
@@ -288,9 +288,9 @@ void TaxelSensor::internal_update(const mjModel *model, mjData *data,
 		// If there are no sampled points on the surface fill the sensor message with zeros
 		for (int i = 0; i < n; ++i) {
 			tactile_state_msg_.sensors[0].values[i] = 0;
-			pos[0] = taxels_at_M3(0, i);
-			pos[1] = taxels_at_M3(1, i);
-			pos[2] = taxels_at_M3(2, i);
+			pos[0]                                  = taxels_at_M3(0, i);
+			pos[1]                                  = taxels_at_M3(1, i);
+			pos[2]                                  = taxels_at_M3(2, i);
 			initVGeom(mjGEOM_SPHERE, sizeS, pos, NULL, red);
 		}
 	}

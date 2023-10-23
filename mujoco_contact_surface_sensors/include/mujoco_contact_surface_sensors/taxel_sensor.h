@@ -81,7 +81,7 @@ class TaxelSensor : public TactileSensorBase
 {
 public:
 	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
+	bool load(const mjModel *m, mjData *d) override;
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);

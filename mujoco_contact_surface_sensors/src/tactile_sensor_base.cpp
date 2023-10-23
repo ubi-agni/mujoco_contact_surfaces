@@ -38,19 +38,19 @@
 
 namespace mujoco_ros::contact_surfaces::sensors {
 
-bool TactileSensorBase::load(mjModelPtr m, mjDataPtr d)
+bool TactileSensorBase::load(const mjModel *m, mjData *d)
 {
 	if (rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct && rosparam_config_.hasMember("geomName") &&
 	    rosparam_config_.hasMember("topicName") && rosparam_config_.hasMember("updateRate") &&
 	    rosparam_config_.hasMember("sensorName")) {
 		geomName = static_cast<std::string>(rosparam_config_["geomName"]);
 
-		int id = mj_name2id(m.get(), mjOBJ_GEOM, geomName.c_str());
+		int id = mj_name2id(const_cast<mjModel *>(m), mjOBJ_GEOM, geomName.c_str());
 		if (id >= 0) {
 			geomID       = id;
 			lastUpdate   = ros::Time();
 			topicName    = static_cast<std::string>(rosparam_config_["topicName"]);
-			publisher    = node_handle_->advertise<tactile_msgs::TactileState>(topicName, 1, true);
+			publisher    = node_handle_.advertise<tactile_msgs::TactileState>(topicName, 1, true);
 			sensorName   = static_cast<std::string>(rosparam_config_["sensorName"]);
 			updateRate   = static_cast<double>(rosparam_config_["updateRate"]);
 			updatePeriod = ros::Duration(1.0 / updateRate);
@@ -84,7 +84,7 @@ void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<Ge
 	}
 }
 
-void TactileSensorBase::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
+void TactileSensorBase::renderCallback(const mjModel *model, mjData *data, mjvScene *scene)
 {
 	if (visualize) {
 		ROS_WARN_STREAM_COND_NAMED(

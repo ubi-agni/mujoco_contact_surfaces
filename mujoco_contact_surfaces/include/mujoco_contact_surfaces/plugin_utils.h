@@ -50,10 +50,10 @@ public:
 	virtual ~SurfacePlugin() {}
 
 	// Called directly after plugin creation
-	void init(const XmlRpc::XmlRpcValue &config, ros::NodeHandlePtr nh)
+	void init(const XmlRpc::XmlRpcValue &config, const std::string &nh_namespace)
 	{
 		rosparam_config_ = config;
-		node_handle_     = nh;
+		node_handle_     = ros::NodeHandle(nh_namespace);
 	};
 
 	/**
@@ -64,7 +64,7 @@ public:
 	 * @return true if plugin could be loaded without errors.
 	 * @return false if errors occurred during loading.
 	 */
-	bool safe_load(mjModelPtr m, mjDataPtr d)
+	bool safe_load(const mjModel *m, mjData *d)
 	{
 		loading_successful_ = load(m, d);
 		if (!loading_successful_)
@@ -100,7 +100,7 @@ public:
 	 * @param[in] data pointer to mjData.
 	 * @param[in] scene pointer to mjvScene.
 	 */
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene){};
+	virtual void renderCallback(const mjModel *model, mjData *data, mjvScene *scene){};
 
 protected:
 	/**
@@ -111,7 +111,7 @@ protected:
 	 * @return true on succesful load.
 	 * @return false if load was not successful.
 	 */
-	virtual bool load(mjModelPtr m, mjDataPtr d) = 0;
+	virtual bool load(const mjModel *m, mjData *d) = 0;
 
 	/**
 	 * @brief Called on reset.
@@ -124,7 +124,7 @@ private:
 protected:
 	SurfacePlugin() {}
 	XmlRpc::XmlRpcValue rosparam_config_;
-	ros::NodeHandlePtr node_handle_;
+	ros::NodeHandle node_handle_;
 };
 
 namespace plugin_utils {
@@ -143,12 +143,12 @@ bool parsePlugins(const XmlRpc::XmlRpcValue &config,
 /**
  * @brief Calls registerPlugin for each plugin defined in \c config_rpc.
  *
- * @param[in] nh pointer to nodehandle in correct namespace.
+ * @param[in] nh_namespace nodehandle namespace.
  * @param[in] config_rpc config of at least one plugin to load.
  * @param[in] plugin_loader_ptr_ Pointer to plugin loader.
  * @param[inout] plugins vector of plugins. If successfully initialized, the plugins are appended to the vector.
  */
-void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
+void registerPlugins(const std::string &nh_namespace, const XmlRpc::XmlRpcValue &config_rpc,
                      boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                      std::vector<SurfacePluginPtr> &plugins);
 
@@ -156,13 +156,13 @@ void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
  * @brief Loads a SurfacePlugin defined in \c config_rpc via pluginlib and registers it in the passed plugin vector for
  * further usage.
  *
- * @param[in] nh pointer to nodehandle in correct namespace.
+ * @param[in] nh_namespace nodehandle namespace.
  * @param[in] config_rpc config of the plugin to load.
  * @param[in] plugin_loader_ptr_ Pointer to plugin loader.
  * @param[inout] plugins vector of plugins. If successfully initialized, the plugin is appended to the vector.
  * @return true if initializing the plugin was successful, false otherwise.
  */
-bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
+bool registerPlugin(const std::string &nh_namespace, const XmlRpc::XmlRpcValue &config_rpc,
                     boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                     std::vector<SurfacePluginPtr> &plugins);
 

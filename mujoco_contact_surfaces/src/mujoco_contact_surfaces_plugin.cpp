@@ -100,7 +100,7 @@ void passive_cb_wrapper(const mjModel *m, mjData *d)
 		default_passive_cb(m, d);
 	}
 	if (instance_map.find(d) != instance_map.end()) {
-		instance_map[d]->passive_cb(m, d);
+		instance_map[d]->passiveCallback(m, d);
 	}
 }
 
@@ -193,7 +193,7 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Shutting down mujoco_contact_surfaces plugin ...");
 	geomCollisions.clear();
 	contactProperties.clear();
-	instance_map.erase(d_.get());
+	instance_map.erase(d_);
 	if (instance_map.empty()) {
 		for (int i = 0; i < mjNGEOMTYPES; ++i) {
 			for (int j = 0; j < mjNGEOMTYPES; ++j) {
@@ -205,7 +205,7 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 	}
 }
 
-bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
+bool MujocoContactSurfacesPlugin::load(const mjModel *m, mjData *d)
 {
 	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loading mujoco_contact_surfaces plugin ...");
 
@@ -216,13 +216,13 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 		return false;
 	}
 
-	std::string robot_namespace_ = node_handle_->getNamespace();
+	std::string robot_namespace_ = node_handle_.getNamespace();
 	ROS_ASSERT(rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-	parseMujocoCustomFields(m.get());
-	d_                    = d;
-	m_                    = m;
-	instance_map[d.get()] = this;
+	parseMujocoCustomFields(m);
+	d_              = d;
+	m_              = m;
+	instance_map[d] = this;
 	if (instance_map.size() == 1) {
 		initCollisionFunction();
 	}
@@ -231,8 +231,8 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 	XmlRpc::XmlRpcValue plugin_config;
 	if (mujoco_ros::contact_surfaces::plugin_utils::parsePlugins(rosparam_config_, surface_plugin_loader,
 	                                                             plugin_config)) {
-		mujoco_ros::contact_surfaces::plugin_utils::registerPlugins(node_handle_, plugin_config, surface_plugin_loader,
-		                                                            plugins);
+		mujoco_ros::contact_surfaces::plugin_utils::registerPlugins(node_handle_.getNamespace(), plugin_config,
+		                                                            surface_plugin_loader, plugins);
 	}
 	for (const auto &plugin : plugins) {
 		if (plugin->safe_load(m, d)) {
@@ -250,8 +250,6 @@ void MujocoContactSurfacesPlugin::reset()
 	for (const auto &plugin : plugins) {
 		plugin->safe_reset();
 	}
-	// contactProperties.clear();
-	// instance_map.erase(d_.get());
 }
 
 int MujocoContactSurfacesPlugin::collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2,
@@ -403,7 +401,7 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 	}
 }
 
-void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
+void MujocoContactSurfacesPlugin::passiveCallback(const mjModel *m, mjData *d)
 {
 	if (visualizeContactSurfaces) {
 		// reset the visualized geoms
@@ -546,11 +544,6 @@ void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double 
 	}
 }
 
-void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
-{
-	passive_cb(model.get(), data.get());
-}
-
 void MujocoContactSurfacesPlugin::initCollisionFunction()
 {
 	// #define SP std::placeholders
@@ -565,7 +558,7 @@ void MujocoContactSurfacesPlugin::initCollisionFunction()
 	}
 }
 
-void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
+void MujocoContactSurfacesPlugin::parseMujocoCustomFields(const mjModel *m)
 {
 	// parse HydroelasticContactRepresentation
 	int hcp_id = mj_name2id(m, mjOBJ_TEXT, (PREFIX + "HydroelasticContactRepresentation").c_str());
@@ -788,7 +781,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 	}
 }
 
-void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
+void MujocoContactSurfacesPlugin::renderCallback(const mjModel *model, mjData *data, mjvScene *scene)
 {
 	if (visualizeContactSurfaces) {
 		int n = std::min(n_vGeom, scene->maxgeom);
@@ -801,7 +794,7 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 	}
 }
 
-void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const int id)
+void MujocoContactSurfacesPlugin::onGeomChanged(const mjModel *m, mjData *d, const int id)
 {
 	// check if contactProperties exist for the specific geom
 	if (contactProperties.find(id) != contactProperties.end()) {

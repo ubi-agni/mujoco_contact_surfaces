@@ -44,20 +44,20 @@ using namespace mujoco_ros::contact_surfaces;
 using namespace std::chrono;
 using namespace mujoco_ros;
 
-
 class TactileSensorBase : public SurfacePlugin
 {
 public:
-	~TactileSensorBase() {
+	~TactileSensorBase()
+	{
 		if (vGeoms != nullptr) {
 			delete[] vGeoms;
 		}
 	}
 	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
-	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
-	virtual void reset();
+	bool load(const mjModel *m, mjData *d) override;
+	void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions) override;
+	void renderCallback(const mjModel *model, mjData *data, mjvScene *scene) override;
+	void reset() override;
 
 private:
 	// Buffer of visual geoms

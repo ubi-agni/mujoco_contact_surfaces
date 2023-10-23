@@ -46,7 +46,7 @@ using namespace drake;
 using namespace drake::geometry;
 
 void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config,
-                                             uint32_t level, mjModelPtr m)
+                                             uint32_t level, const mjModel *m)
 {
 	// When initializing fetch current config instead of overriding
 	if (level == -1) {
@@ -124,7 +124,7 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 	tactile_state_msg_.sensors.push_back(channel);
 }
 
-bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
+bool FlatTactileSensor::load(const mjModel *m, mjData *d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("resolution")) {
 		resolution = static_cast<double>(rosparam_config_["resolution"]);
@@ -186,7 +186,8 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 
 		// TODO: Other namespace?
 		// dynamic_param_server(ros::NodeHandle(node_handle_->getNamespace() + "/" + sensorName));
-		dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this, _1, _2, m));
+		dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this,
+		                                             boost::placeholders::_1, boost::placeholders::_2, m));
 
 		double xs = m->geom_size[3 * geomID];
 		double ys = m->geom_size[3 * geomID + 1];

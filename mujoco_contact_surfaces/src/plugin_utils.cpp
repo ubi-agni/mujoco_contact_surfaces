@@ -61,13 +61,13 @@ bool parsePlugins(const XmlRpc::XmlRpcValue &config,
 		return false;
 	} else {
 		ROS_DEBUG_NAMED("mujoco_contact_surfaces_plugin_loader", "Initializing plugin loader ... ");
-		plugin_loader_ptr_.reset(new pluginlib::ClassLoader<SurfacePlugin>("mujoco_contact_surfaces",
-		                                                                   "mujoco_ros::contact_surfaces::SurfacePlugin"));
+		plugin_loader_ptr_.reset(new pluginlib::ClassLoader<SurfacePlugin>(
+		    "mujoco_contact_surfaces", "mujoco_ros::contact_surfaces::SurfacePlugin"));
 	}
 	return true;
 }
 
-void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
+void registerPlugins(const std::string &nh_namespace, const XmlRpc::XmlRpcValue &config_rpc,
                      boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                      std::vector<SurfacePluginPtr> &plugins)
 {
@@ -81,11 +81,11 @@ void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
 			                           << "'. Skipping " << config_rpc[i]);
 			continue;
 		}
-		registerPlugin(nh, config_rpc[i], plugin_loader_ptr_, plugins);
+		registerPlugin(nh_namespace, config_rpc[i], plugin_loader_ptr_, plugins);
 	}
 }
 
-bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config,
+bool registerPlugin(const std::string &nh_namespace, const XmlRpc::XmlRpcValue &config,
                     boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                     std::vector<SurfacePluginPtr> &plugins)
 {
@@ -104,18 +104,18 @@ bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config,
 
 	try {
 		SurfacePluginPtr mjplugin_ptr = plugin_loader_ptr_->createInstance(type);
-		mjplugin_ptr->init(config, nh);
+		mjplugin_ptr->init(config, nh_namespace);
 		plugins.push_back(mjplugin_ptr);
 		ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
-		                       "Added " << type << " to the list of loaded plugins in namespace '" << nh->getNamespace()
+		                       "Added " << type << " to the list of loaded plugins in namespace '" << nh_namespace
 		                                << "'. List now contains " << plugins.size() << " plugin(s)");
 	} catch (const pluginlib::PluginlibException &ex) {
 		ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
-		                       "The plugin failed to load (for namespace " << nh->getNamespace() << " ): " << ex.what());
+		                       "The plugin failed to load (for namespace " << nh_namespace << " ): " << ex.what());
 		return false;
 	}
 
 	return true;
 }
 
-} // namespace mujoco_contact_surfaces::plugin_utils
+} // namespace mujoco_ros::contact_surfaces::plugin_utils
