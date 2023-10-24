@@ -308,15 +308,11 @@ void FlatTactileSensor::bvh_update(const mjModel *m, mjData *d, const std::vecto
 		rtukey = 1.f / sigma * sampling_resolution * sampling_resolution;
 	}
 
-	ROS_DEBUG_STREAM_ONCE("rmean: " << rmean);
+#pragma omp parallel for collapse(2) schedule(dynamic) if (use_parallel)
 	for (int x = 0; x < cx; x++) { // for each cell on axis x
 		for (int y = 0; y < cy; y++) { // for each cell on axis y
 			float avg_pressure = 0;
 			{
-// #pragma omp declare reduction (+: Eigen::ArrayXXd : omp_out += omp_in) initializer(omp_priv=Eigen::ArrayXXd::Zero(cx,
-// cy)) #pragma omp target map(tofrom : pressure_raw) map(to : x, y, t, i, j, sensor_center, rSampling_resolution, xs,
-// ys, zs, tlas) if (use_parallel)
-#pragma omp parallel for reduction(+ : avg_pressure) schedule(dynamic, 8) if (use_parallel && sampling_resolution > 8)
 				for (int i = 0; i < sampling_resolution; i++) { // for each sample in cell on axis x
 					for (int j = 0; j < sampling_resolution; j++) { // for each sample in cell on axis y
 
