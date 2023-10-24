@@ -1,14 +1,17 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="modelfile"
-    default="$(find mujoco_contact_surface_sensors)/assets/myrmex_surface_world.xml" />
+  <arg name="object" default="plate" />
 
   <rosparam file="$(find mujoco_contact_surface_sensors)/config/myrmex_sensor.yaml"
     subst_value="true" />
 
   <include file="$(find mujoco_ros)/launch/launch_server.launch" pass_all_args="true" >
     <arg name="console_config_file" value="$(find mujoco_contact_surface_sensors)/rosconsole.config" />
-    <arg name="/use_sim_time" value="true" />
+    <arg name="use_sim_time" value="true" />
+    <arg if="$(eval arg('object') == 'plate')" name="modelfile" value="$(find mujoco_contact_surface_sensors)/assets/myrmex_plate_world.xml" />
+    <arg if="$(eval arg('object') == 'spot')" name="modelfile" value="$(find mujoco_contact_surface_sensors)/assets/myrmex_spot_world.xml" />
+    <arg if="$(eval arg('object') == 'box')" name="modelfile" value="$(find mujoco_contact_surface_sensors)/assets/myrmex_box_world.xml" />
+    <arg if="$(eval arg('object') not in ['box', 'spot', 'plate'])" name="modelfile" value="$(find mujoco_contact_surface_sensors)/assets/myrmex_plate_world.xml" />
   </include>
 </launch>

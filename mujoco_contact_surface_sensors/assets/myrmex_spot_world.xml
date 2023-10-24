@@ -15,7 +15,6 @@
     <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
       width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>
     <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true"/>
-    <mesh file="plate_8in_col.stl" scale="1 1 1"/>
     <texture name="spot_text" file="meshes/spot/spot_texture.png" type="2d" rgb1="1 1 1" rgb2="1 1 1"/>
     <material name="spot" reflectance="0.0" texture="spot_text" texrepeat="1 1" texuniform="true"/>
     <mesh name="spot"  file="spot/spot_triangulated.obj"  scale="0.05 0.05 0.05" />
@@ -24,13 +23,12 @@
   <custom>
     <!-- All custom parameters related to contact surfaces have the prefix cs:: -->
     <text name="cs::HydroelasticContactRepresentation" data="kTriangle"/>
-    <numeric name="cs::VisualizeSurfaces" data="0"/>
+    <numeric name="cs::VisualizeSurfaces" data="1"/>
     <!-- If cs::ApplyContactSurfaceForces is 0 Contact Surfaces are only computed for tactile sensors and standard mujoco contacts are used to compute physics -->
     <numeric name="cs::ApplyContactSurfaceForces" data="1"/>
     <!-- Contact properties for each geom: hydroelasticModulus, dissipation, resolutionHint.
     A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
     A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
-    <numeric name="cs::box1" data="0 1.0 0.05 0.3 0.3"/>
     <numeric name="cs::spot" data="0 1.0 0 0.3 0.3"/>
     <numeric name="cs::myrmex_foam" data="5e4 5.0 0 0.3 0.3"/>
 
