@@ -46,41 +46,6 @@
 
 namespace mujoco_ros::contact_surfaces::sensors {
 
-std::unique_ptr<TriangleSurfaceMesh<double>> GenerateMesh()
-{
-	std::vector<Eigen::Vector3d> vertices = { { 0., 0., 0. }, { 1., 0., 0. }, { 1., 1., 0. }, { 0., 1., 0. } };
-	std::vector<SurfaceTriangle> faces{ { 0, 1, 2 }, { 2, 3, 0 } };
-	return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces), std::move(vertices));
-}
-
-std::unique_ptr<MeshFieldLinear<double, TriangleSurfaceMesh<double>>> MakeField(std::vector<double> &&e_values,
-                                                                                const TriangleSurfaceMesh<double> &mesh)
-{
-	auto tri_mesh = GenerateMesh();
-	TriangleSurfaceMeshFieldLinear<double, double> field(std::vector<double>(e_values), tri_mesh.get());
-
-	std::vector<Eigen::Vector3d> e_grad;
-	for (int t = 0; t < tri_mesh->num_elements(); ++t) {
-		e_grad.push_back(field.EvaluateGradient(t));
-	}
-	return std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(std::move(e_values), &mesh,
-	                                                                              std::move(e_grad));
-}
-
-drake::geometry::ContactSurface<double> GenerateContactSurface()
-{
-	auto id_M         = GeometryId::get_new_id();
-	auto id_N         = GeometryId::get_new_id();
-	auto surface_mesh = GenerateMesh();
-
-	std::vector<double> e_values = { 0., 1., 2., 3. };
-	std::unique_ptr<MeshFieldLinear<double, TriangleSurfaceMesh<double>>> e_field =
-	    MakeField(std::move(e_values), *surface_mesh);
-
-	drake::geometry::ContactSurface<double> contact_surface(id_M, id_N, std::move(surface_mesh), std::move(e_field));
-	return contact_surface;
-}
-
 void IntersectTriangle(Ray &ray, const Triangle &tri, const uint bvh_triangle)
 {
 	// Moeller-Trumbore algorithm
@@ -512,24 +477,3 @@ void TLAS::intersect(Ray &ray)
 } // namespace mujoco_ros::contact_surfaces::sensors
 
 using namespace mujoco_ros::contact_surfaces::sensors;
-
-int main(int argc, char **argv)
-{
-	auto tmp = GenerateContactSurface();
-	std::shared_ptr<drake::geometry::ContactSurface<double>> contact_surface(&tmp);
-	BVH bvh(contact_surface);
-
-	// with multiple BVHs:
-	/*
-	BVH bvh2(contact_surface2);
-
-	BVH bvhs[2] = {bvh, bvh2};
-	tlas = TLAS(bvhs, 2);
-	tlas.build();
-	*/
-
-	// bvh.build();
-
-	std::cout << "Exiting program" << std::endl;
-	return 0;
-}
