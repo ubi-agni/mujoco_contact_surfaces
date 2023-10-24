@@ -16,6 +16,21 @@ For more information refer to:
 - https://arxiv.org/pdf/1904.11433.pdf
 - https://arxiv.org/pdf/2110.04157.pdf
 
+## Cite
+
+If you are using this repository in your reasearch, please cite the following in your publications:
+
+```bibtex
+@inproceedings{
+    leins2023more,
+    title={More Accurate Tactile Sensor Simulation with Hydroelastic Contacts in MuJoCo},
+    author={David Leins and Florian Patzelt and Robert Haschke},
+    booktitle={IROS 2023 Workshop on Leveraging Models for Contact-Rich Manipulation},
+    year={2023},
+    url={https://openreview.net/forum?id=gCdemyFIVe}
+}
+```
+
 ## Tactile sensor simulation
 This plugin can also be used to simulate tactile sensor arrays like the [Myrmex sensor](https://www.researchgate.net/profile/Carsten-Schuermann/publication/229035606_Modular_high_speed_tactile_sensor_system_with_video_interface/links/541affca0cf25ebee988df89/Modular-high-speed-tactile-sensor-system-with-video-interface.pdf).
 
