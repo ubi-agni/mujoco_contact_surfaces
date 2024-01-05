@@ -50,7 +50,7 @@ class FlatTactileSensor : public TactileSensorBase
 {
 public:
 	// Overloaded entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d) override;
+	virtual bool load(const mjModel * m, mjData * d) override;
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d,
@@ -89,7 +89,7 @@ private:
 	// Dynamic reconfigure
 	dynamic_reconfigure::Server<mujoco_contact_surface_sensors::DynamicFlatTactileConfig> dynamic_param_server;
 	void dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config, uint32_t level,
-	                          mjModelPtr m);
+	                          const mjModel * m);
 	std::mutex dynamic_param_mutex;
 };
 

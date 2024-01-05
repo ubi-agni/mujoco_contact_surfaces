@@ -66,10 +66,12 @@
 
 #include <mujoco_contact_surface_sensors/tactile_sensor_base.h>
 #include <mujoco_contact_surface_sensors/bvh.h>
+#include <std_srvs/Empty.h>
 
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
 using namespace mujoco_ros::contact_surfaces;
+using namespace std_srvs;
 
 enum TaxelMethod
 {
@@ -90,7 +92,7 @@ class CurvedSensor : public TactileSensorBase
 {
 public:
 	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
+	virtual bool load(const mjModel * m, mjData * d);
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
@@ -117,7 +119,10 @@ private:
 
 	double max_pressure = 0.04;
 
+	int visualization_mode = 0;
+	ros::ServiceServer toogle_service;
 	void sample_triangle(int n, Vector3<double> A, Vector3<double> B, Vector3<double> C, double area, std::vector<Vector3<double>> &samples, std::vector<double> &areas);
+	bool toogle_vis(EmptyRequest  &req, EmptyResponse &res);
 };
 
 } // namespace mujoco_ros::contact_surfaces::sensors

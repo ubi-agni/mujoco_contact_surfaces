@@ -67,7 +67,7 @@ bool parsePlugins(const XmlRpc::XmlRpcValue &config,
 	return true;
 }
 
-void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
+void registerPlugins(ros::NodeHandle nh, XmlRpc::XmlRpcValue &config_rpc,
                      boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                      std::vector<SurfacePluginPtr> &plugins)
 {
@@ -85,7 +85,7 @@ void registerPlugins(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config_rpc,
 	}
 }
 
-bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config,
+bool registerPlugin(ros::NodeHandle nh, XmlRpc::XmlRpcValue &config,
                     boost::shared_ptr<pluginlib::ClassLoader<SurfacePlugin>> &plugin_loader_ptr_,
                     std::vector<SurfacePluginPtr> &plugins)
 {
@@ -107,11 +107,11 @@ bool registerPlugin(ros::NodeHandlePtr nh, XmlRpc::XmlRpcValue &config,
 		mjplugin_ptr->init(config, nh);
 		plugins.push_back(mjplugin_ptr);
 		ROS_DEBUG_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
-		                       "Added " << type << " to the list of loaded plugins in namespace '" << nh->getNamespace()
+		                       "Added " << type << " to the list of loaded plugins in namespace '" << nh.getNamespace()
 		                                << "'. List now contains " << plugins.size() << " plugin(s)");
 	} catch (const pluginlib::PluginlibException &ex) {
 		ROS_ERROR_STREAM_NAMED("mujoco_contact_surfaces_plugin_loader",
-		                       "The plugin failed to load (for namespace " << nh->getNamespace() << " ): " << ex.what());
+		                       "The plugin failed to load (for namespace " << nh.getNamespace() << " ): " << ex.what());
 		return false;
 	}
 

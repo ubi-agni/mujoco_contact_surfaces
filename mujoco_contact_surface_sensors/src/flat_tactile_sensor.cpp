@@ -46,14 +46,14 @@ using namespace drake;
 using namespace drake::geometry;
 
 void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::DynamicFlatTactileConfig &config,
-                                             uint32_t level, mjModelPtr m)
+                                             uint32_t level, const mjModel * m)
 {
 	std::lock_guard<std::mutex> lock(dynamic_param_mutex);
 	ROS_INFO_STREAM("Reconfigure request for " << sensorName << " received.");
 
 	updatePeriod        = ros::Duration(1.0 / config.update_rate);
 	visualize           = config.visualize;
-	resolution          = config.resolution;
+	//resolution          = config.resolution;
 	sampling_resolution = config.sampling_resolution;
 	use_parallel        = config.use_parallel;
 	sigma               = static_cast<float>(config.sigma);
@@ -114,7 +114,7 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 	tactile_state_msg_.sensors.push_back(channel);
 }
 
-bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
+bool FlatTactileSensor::load(const mjModel * m, mjData * d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("resolution")) {
 		resolution = static_cast<double>(rosparam_config_["resolution"]);
@@ -176,7 +176,7 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 
 		// TODO: Other namespace?
 		// dynamic_param_server(ros::NodeHandle(node_handle_->getNamespace() + "/" + sensorName));
-		dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this, _1, _2, m));
+		//dynamic_param_server.setCallback(boost::bind(&FlatTactileSensor::dynamicParamCallback, this, _1, _2, m));
 
 		double xs = m->geom_size[3 * geomID];
 		double ys = m->geom_size[3 * geomID + 1];
@@ -185,6 +185,11 @@ bool FlatTactileSensor::load(mjModelPtr m, mjDataPtr d)
 		cx     = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 		cy     = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 		vGeoms = new mjvGeom[2 * cx * cy + 50];
+		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
+		                      "Sensor dimensions: " << xs << " x " << ys);
+		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
+		                      "resolution: " << resolution);
+
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
 		                      "Found tactile sensor: " << sensorName << " " << cx << "x" << cy);
 

@@ -2,7 +2,6 @@
 <launch>
 
   <arg name="modelfile"   default="$(find mujoco_contact_surfaces)/assets/box_on_box_world.xml"  />
-  <arg name="modelfile"   default="$(find mujoco_contact_surfaces)/assets/box_on_box_world.xml"  />
   <arg name="console_config_file"  default="$(find mujoco_contact_surface_sensors)/rosconsole.config" />
 
   <rosparam file="$(find mujoco_contact_surfaces)/config/mujoco_contact_surfaces.yaml" subst_value="true" />

@@ -216,14 +216,14 @@ public:
 	virtual ~MujocoContactSurfacesPlugin();
 
 	// Overloaded entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d) override;
+	virtual bool load(const mjModel * m, mjData * d) override;
 
 	// Called on reset
 	virtual void reset() override;
 
-	virtual void passiveCallback(mjModelPtr model, mjDataPtr data) override;
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene) override;
-	virtual void onGeomChanged(mjModelPtr model, mjDataPtr data, const int geom_id) override;
+	virtual void passiveCallback(const mjModel * model, mjData * data) override;
+	virtual void renderCallback(const mjModel * model, mjData * data, mjvScene *scene) override;
+	virtual void onGeomChanged(const mjModel * model, mjData * data, const int geom_id) override;
 
 	void passive_cb(const mjModel *m, mjData *d);
 	int collision_cb(const mjModel *m, const mjData *d, mjContact *con, int g1, int g2, mjtNum margin);
@@ -232,8 +232,8 @@ public:
 
 protected:
 	// Mujoco model and data pointers
-	mjModelPtr m_;
-	mjDataPtr d_;
+	const mjModel *m_;
+	mjData *d_;
 	bool visualizeContactSurfaces  = false;
 	bool applyContactSurfaceForces = true;
 	std::vector<GeomCollisionPtr> geomCollisions;
@@ -251,7 +251,7 @@ private:
 
 	std::map<int, std::shared_ptr<ContactProperties>> contactProperties;
 
-	void parseMujocoCustomFields(mjModel *m);
+	void parseMujocoCustomFields(const mjModel *m);
 	void initCollisionFunction();
 
 	void evaluateContactSurface(const mjModel *m, const mjData *d, GeomCollisionPtr gc);

@@ -43,7 +43,7 @@ namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
 using namespace drake::geometry;
 
-bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
+bool TaxelSensor::load(const mjModel * m, mjData * d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("taxels") && rosparam_config_.hasMember("method") &&
 	    rosparam_config_.hasMember("include_margin") && rosparam_config_.hasMember("sample_resolution")) {
@@ -124,10 +124,10 @@ bool TaxelSensor::load(mjModelPtr m, mjDataPtr d)
 				mjMARKSTACK;
 				// int id = geomID;
 				Eigen::Matrix4d M;
-				mjtNum *R = mj_stackAlloc(d.get(), 9);
+				mjtNum *R = mj_stackAlloc(d, 9);
 
-				mjtNum *p = mj_stackAlloc(d.get(), 3);
-				mjtNum *q = mj_stackAlloc(d.get(), 4);
+				mjtNum *p = mj_stackAlloc(d, 3);
+				mjtNum *q = mj_stackAlloc(d, 4);
 
 				mju_negPose(p, q, p0, q0);
 

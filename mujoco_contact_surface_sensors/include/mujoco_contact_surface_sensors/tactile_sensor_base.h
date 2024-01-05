@@ -54,9 +54,9 @@ public:
 		}
 	}
 	// Overlead entry point
-	virtual bool load(mjModelPtr m, mjDataPtr d);
+	virtual bool load(const mjModel * m, mjData * d);
 	virtual void update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions);
-	virtual void renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene);
+	virtual void renderCallback(const mjModel * model, mjData * data, mjvScene *scene);
 	virtual void reset();
 
 private:

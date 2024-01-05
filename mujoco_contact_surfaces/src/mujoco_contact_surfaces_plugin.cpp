@@ -193,7 +193,7 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Shutting down mujoco_contact_surfaces plugin ...");
 	geomCollisions.clear();
 	contactProperties.clear();
-	instance_map.erase(d_.get());
+	instance_map.erase(d_);
 	if (instance_map.empty()) {
 		for (int i = 0; i < mjNGEOMTYPES; ++i) {
 			for (int j = 0; j < mjNGEOMTYPES; ++j) {
@@ -205,7 +205,7 @@ MujocoContactSurfacesPlugin::~MujocoContactSurfacesPlugin()
 	}
 }
 
-bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
+bool MujocoContactSurfacesPlugin::load(const mjModel * m, mjData * d)
 {
 	ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "Loading mujoco_contact_surfaces plugin ...");
 
@@ -216,13 +216,13 @@ bool MujocoContactSurfacesPlugin::load(mjModelPtr m, mjDataPtr d)
 		return false;
 	}
 
-	std::string robot_namespace_ = node_handle_->getNamespace();
+	std::string robot_namespace_ = node_handle_.getNamespace();
 	ROS_ASSERT(rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-	parseMujocoCustomFields(m.get());
+	parseMujocoCustomFields(m);
 	d_                    = d;
 	m_                    = m;
-	instance_map[d.get()] = this;
+	instance_map[d] = this;
 	if (instance_map.size() == 1) {
 		initCollisionFunction();
 	}
@@ -329,6 +329,9 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 	const double dissipation                  = calcCombinedDissipation(cp1.get(), cp2.get());
 	// const double stiction_tolerance = 1.0e-4;
 	// const double relative_tolerance = 1.0e-2;
+	double total_fn0 = 0;
+	double mean_p0 = 0;
+	int count = 0;
 	for (int face = 0; face < s->num_faces(); ++face) {
 		const double &Ae = s->area(face); // Face element area.
 
@@ -387,9 +390,11 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			// Pressure at the quadrature point.
 			const double p0 = s->is_triangle() ? s->tri_e_MN().Evaluate(face, tri_centroid_barycentric) :
 			                                     s->poly_e_MN().EvaluateCartesian(face, p_WQ);
-
+			mean_p0 += p0;
+			count++;
 			// Force contribution by this quadrature point.
 			const double fn0 = Ae * p0;
+			total_fn0 += fn0;
 
 			// Effective compliance in the normal direction for the given
 			// discrete patch, refer to [Masterjohn et al., 2021] for details.
@@ -401,6 +406,8 @@ void MujocoContactSurfacesPlugin::evaluateContactSurface(const mjModel *m, const
 			gc->pointCollisions.push_back({ p_WQ, nhat_W, fn0, k, dissipation, face });
 		}
 	}
+	mean_p0 /= count;
+	// std::cout << s->centroid()[0] << " " << s->centroid()[1] << " " << s->centroid()[2] << " " << total_fn0 << " " << mean_p0 << " " << count << " " << s->total_area() << " " << std::endl;
 }
 
 void MujocoContactSurfacesPlugin::passive_cb(const mjModel *m, mjData *d)
@@ -524,31 +531,34 @@ void MujocoContactSurfacesPlugin::visualizeMeshElement(int face, T mesh, double 
 		const mjtNum size[3] = { 0.00015, 0.00015, 0.00015 };
 		// int face                    = pc.face;
 		float scale                 = std::min(std::abs(fn), running_scale) / running_scale;
-		const float rgba[4]         = { scale, 0., 1.0f - scale, 0.8 };
+		const float rgba[4]         = { 0.3, 0.3, 0.3, 0.8 };//{ scale, 0., 1.0f - scale, 0.8 };
 		const Vector3<double> &p_WQ = mesh.element_centroid(face);
 		const mjtNum pos[3]         = { p_WQ[0], p_WQ[1], p_WQ[2] };
 
-		mjvGeom *g = vGeoms + n_vGeom++;
-		mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
+		// mjvGeom *g = vGeoms + n_vGeom++;
+		// mjv_initGeom(g, mjGEOM_SPHERE, size, pos, NULL, rgba);
 		auto p              = mesh.element(face);
 		Vector3<double> vp0 = mesh.vertex(p.vertex(p.num_vertices() - 1));
 		Vector3<double> n   = mesh.face_normal(face);
 		for (int v = 0; v < p.num_vertices(); ++v) {
 			Vector3<double> vp1 = mesh.vertex(p.vertex(v));
 			if (n_vGeom == MAX_VGEOM) {
+				std::cout << "n_vGeom too big" << std::endl;
 				break;
 			}
 			mjvGeom *g = vGeoms + n_vGeom++;
 			mjv_initGeom(g, mjGEOM_CYLINDER, NULL, NULL, NULL, rgba);
-			mjv_makeConnector(g, mjGEOM_CYLINDER, 0.0001, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
+			mjv_makeConnector(g, mjGEOM_CYLINDER, 0.000015, vp0[0], vp0[1], vp0[2], vp1[0], vp1[1], vp1[2]);
 			vp0 = vp1;
 		}
+	} else {
+		std::cout << "n_vGeom too big" << std::endl;
 	}
 }
 
-void MujocoContactSurfacesPlugin::passiveCallback(mjModelPtr model, mjDataPtr data)
+void MujocoContactSurfacesPlugin::passiveCallback(const mjModel *model, mjData *data)
 {
-	passive_cb(model.get(), data.get());
+	passive_cb(model, data);
 }
 
 void MujocoContactSurfacesPlugin::initCollisionFunction()
@@ -565,7 +575,7 @@ void MujocoContactSurfacesPlugin::initCollisionFunction()
 	}
 }
 
-void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
+void MujocoContactSurfacesPlugin::parseMujocoCustomFields(const mjModel *m)
 {
 	// parse HydroelasticContactRepresentation
 	int hcp_id = mj_name2id(m, mjOBJ_TEXT, (PREFIX + "HydroelasticContactRepresentation").c_str());
@@ -788,7 +798,7 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(mjModel *m)
 	}
 }
 
-void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr data, mjvScene *scene)
+void MujocoContactSurfacesPlugin::renderCallback(const mjModel * model, mjData * data, mjvScene *scene)
 {
 	if (visualizeContactSurfaces) {
 		int n = std::min(n_vGeom, scene->maxgeom);
@@ -801,7 +811,7 @@ void MujocoContactSurfacesPlugin::renderCallback(mjModelPtr model, mjDataPtr dat
 	}
 }
 
-void MujocoContactSurfacesPlugin::onGeomChanged(mjModelPtr m, mjDataPtr d, const int id)
+void MujocoContactSurfacesPlugin::onGeomChanged(const mjModel * m, mjData * d, const int id)
 {
 	// check if contactProperties exist for the specific geom
 	if (contactProperties.find(id) != contactProperties.end()) {
