@@ -124,10 +124,10 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 				mjMARKSTACK;
 				// int id = geomID;
 				Eigen::Matrix4d M;
-				mjtNum *R = mj_stackAlloc(d.get(), 9);
+				mjtNum *R = mj_stackAlloc(d, 9);
 
-				mjtNum *p = mj_stackAlloc(d.get(), 3);
-				mjtNum *q = mj_stackAlloc(d.get(), 4);
+				mjtNum *p = mj_stackAlloc(d, 3);
+				mjtNum *q = mj_stackAlloc(d, 4);
 
 				mju_negPose(p, q, p0, q0);
 

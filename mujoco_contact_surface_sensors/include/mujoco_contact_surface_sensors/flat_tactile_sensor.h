@@ -50,7 +50,7 @@ class FlatTactileSensor : public TactileSensorBase
 {
 public:
 	// Overloaded entry point
-	bool load(const mjModel *m, mjData *d) override;
+	virtual bool load(const mjModel *m, mjData *d) override;
 
 protected:
 	virtual void internal_update(const mjModel *m, mjData *d,

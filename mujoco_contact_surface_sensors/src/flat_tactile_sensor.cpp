@@ -63,7 +63,7 @@ void FlatTactileSensor::dynamicParamCallback(mujoco_contact_surface_sensors::Dyn
 
 	updatePeriod        = ros::Duration(1.0 / config.update_rate);
 	visualize           = config.visualize;
-	resolution          = config.resolution;
+	//resolution          = config.resolution;
 	sampling_resolution = config.sampling_resolution;
 	use_parallel        = config.use_parallel;
 	sigma               = static_cast<float>(config.sigma);
@@ -196,6 +196,11 @@ bool FlatTactileSensor::load(const mjModel *m, mjData *d)
 		cx     = ::floorl(2 * xs / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 		cy     = ::floorl(2 * ys / resolution + 0.1); // add 0.1 to counter wrong flooring due to imprecision
 		vGeoms = new mjvGeom[2 * cx * cy + 50];
+		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
+		                      "Sensor dimensions: " << xs << " x " << ys);
+		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
+		                      "resolution: " << resolution);
+
 		ROS_INFO_STREAM_NAMED("mujoco_contact_surface_sensors",
 		                      "Found tactile sensor: " << sensorName << " " << cx << "x" << cy);
 

@@ -38,6 +38,31 @@
 
 #include <pluginlib/class_list_macros.h>
 #include <random>
+#include <vcg/complex/complex.h>
+
+#include <vcg/complex/algorithms/point_sampling.h>
+#include <vcg/complex/algorithms/create/platonic.h>
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
+
+using namespace std;
+using namespace vcg;
+
+class MyEdge;
+class MyFace;
+class MyVertex;
+struct MyUsedTypes : public UsedTypes<Use<MyVertex>::AsVertexType, Use<MyEdge>::AsEdgeType, Use<MyFace>::AsFaceType>
+{};
+
+class MyVertex : public Vertex<MyUsedTypes, vertex::Coord3f, vertex::Normal3f, vertex::BitFlags>
+{};
+class MyFace : public Face<MyUsedTypes, face::FFAdj, face::Normal3f, face::VertexRef, face::BitFlags>
+{};
+class MyEdge : public Edge<MyUsedTypes>
+{};
+class MyMesh : public tri::TriMesh<std::vector<MyVertex>, std::vector<MyFace>, std::vector<MyEdge>>
+{};
 
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace drake;
@@ -83,7 +108,7 @@ void CurvedSensor::sample_triangle(int n, Vector3<double> A, Vector3<double> B, 
 	}
 }
 
-bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
+bool CurvedSensor::load(const mjModel *m, mjData *d)
 {
 	if (TactileSensorBase::load(m, d) && rosparam_config_.hasMember("taxels") && rosparam_config_.hasMember("method") &&
 	    rosparam_config_.hasMember("include_margin") && rosparam_config_.hasMember("sample_resolution")) {
@@ -185,10 +210,9 @@ bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
 				// apply geom offset to taxel poses
 				mjMARKSTACK;
 				Eigen::Matrix4d M;
-				mjtNum *R = mj_stackAlloc(d.get(), 9);
-
-				mjtNum *p = mj_stackAlloc(d.get(), 3);
-				mjtNum *q = mj_stackAlloc(d.get(), 4);
+				mjtNum *R = mj_stackAlloc(d, 9);
+				mjtNum *p = mj_stackAlloc(d, 3);
+				mjtNum *q = mj_stackAlloc(d, 4);
 
 				mju_negPose(p, q, p0, q0);
 
@@ -225,42 +249,86 @@ bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
 				if (nv > 0 && nf > 0 && v_adr >= 0 && f_adr >= 0) {
 					std::vector<SurfaceTriangle> triangles;
 					std::vector<Vector3<double>> vertices;
+
+					MyMesh mesh;
+					tri::Allocator<MyMesh>::AddVertices(mesh, nv);
+					tri::Allocator<MyMesh>::AddFaces(mesh, nf);
+
 					for (int i = 0; i < nv; ++i) {
 						int v = v_adr + 3 * i;
 						vertices.push_back(Vector3<double>(m->mesh_vert[v], m->mesh_vert[v + 1], m->mesh_vert[v + 2]));
+						mesh.vert[i].P() = MyMesh::CoordType(m->mesh_vert[v], m->mesh_vert[v + 1], m->mesh_vert[v + 2]);
 					}
 					for (int i = 0; i < nf; ++i) {
 						int f = f_adr + 3 * i;
 						triangles.push_back(SurfaceTriangle(m->mesh_face[f], m->mesh_face[f + 1], m->mesh_face[f + 2]));
+						mesh.face[i].V(0) = &mesh.vert[m->mesh_face[f]];
+						mesh.face[i].V(1) = &mesh.vert[m->mesh_face[f + 1]];
+						mesh.face[i].V(2) = &mesh.vert[m->mesh_face[f + 2]];
 					}
 					TriangleSurfaceMesh<double> *sm =
 					    new TriangleSurfaceMesh<double>(std::move(triangles), std::move(vertices));
 
-					std::default_random_engine generator;
-					std::uniform_real_distribution<double> distribution(0.0, 1.0);
+					tri::SurfaceSampling<MyMesh, tri::TrivialSampler<MyMesh>>::SamplingRandomGenerator().initialize(42);
 
-					double area_resolution = sample_resolution * sm->total_area();
-					double area            = 0;
-					double at              = 0;
+					//----------------------------------------------------------------------
+					// Basic Sample of a mesh surface
+					// Build a point cloud with points with a plain poisson disk distribution
+
+					std::vector<Point3f> pointVec;
+					float rad     = 0;
+					int sampleNum = (int)sample_resolution * sm->total_area();
+					std::cout << "sampleNum: " << sampleNum << std::endl;
+					tri::PoissonSampling<MyMesh>(mesh, pointVec, sampleNum, rad);
+
+					int m = pointVec.size();
 
 					std::vector<Vector3<double>> spoints;
 					std::vector<Vector3<double>> snormals;
 					std::vector<double> sareas;
+					std::vector<std::vector<int>> tidx;
 
-					for (int t = 0; t < nf; ++t) {
-						auto element = sm->element(t);
-						at += sm->area(t);
-						int num_samples = 0;
-						while (area < at) {
-							area += area_resolution;
-							snormals.push_back(sm->face_normal(t));
-							num_samples++;
+					for (int i = 0; i < m; ++i) {
+						auto p = Vector3<double>(pointVec[i][0], pointVec[i][1], pointVec[i][2]);
+
+						tidx.push_back(std::vector<int>());
+
+						for (int t = 0; t < nf; ++t) {
+							auto element = sm->element(t);
+							auto a       = sm->vertex(element.vertex(0));
+							auto b       = sm->vertex(element.vertex(1));
+							auto c       = sm->vertex(element.vertex(2));
+							auto v2      = p - a;
+							if (std::abs(v2.dot(sm->face_normal(t))) > 1e-7)
+								continue;
+
+							auto v0 = b - a;
+							auto v1 = c - a;
+
+							float d00 = v0.dot(v0);
+							float d01 = v0.dot(v1);
+							float d11 = v1.dot(v1);
+
+							float d20   = v2.dot(v0);
+							float d21   = v2.dot(v1);
+							float denom = d00 * d11 - d01 * d01;
+
+							float v = (d11 * d20 - d01 * d21) / denom;
+							float w = (d00 * d21 - d01 * d20) / denom;
+							float u = 1.0f - v - w;
+							if (v >= 0.0 && v <= 1.0 && w >= 0.0 && w <= 1.0 && u >= 0.0 && u <= 1.0 &&
+							    std::abs(v + w + u - 1.0) < 1e-10) {
+								snormals.push_back(sm->face_normal(t));
+								sareas.push_back(sm->total_area() / m);
+								tidx[i].push_back(t);
+								break;
+							}
 						}
-						sample_triangle(num_samples, sm->vertex(element.vertex(0)), sm->vertex(element.vertex(1)),
-						                sm->vertex(element.vertex(2)), sm->area(t), spoints, sareas);
-					}
 
-					int m = spoints.size();
+						if (snormals.size() > spoints.size()) {
+							spoints.push_back(p);
+						}
+					}
 
 					Eigen::Matrix<double, 3, Eigen::Dynamic> surface_points0(3, m);
 					for (int i = 0; i < m; ++i) {
@@ -286,8 +354,8 @@ bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
 									added = true;
 								}
 								surface_idx[i].push_back(close_points_idx.size() - 1);
-								surface_weight[i].push_back(pow(std::max(0.0, include_margin - sqrt(dist(i, j))), 2) *
-								                            sareas[j]);
+								surface_weight[i].push_back(
+								    pow(std::max(0.0, include_margin - sqrt(dist(i, j))), 2)); //*	  sareas[j]);
 							}
 						}
 					}
@@ -300,14 +368,21 @@ bool CurvedSensor::load(mjModelPtr m, mjDataPtr d)
 						auto normal = snormals[close_points_idx[i]];
 						surface_point_mat.col(i) << t[0], t[1], t[2], 1;
 						surface_normal_mat.col(i) << normal[0], normal[1], normal[2], 0;
-					}			
+					}
 				}
 			}
-
+			toogle_service =
+			    node_handle_.advertiseService("toogle_contact_sensor_visualization", &CurvedSensor::toogle_vis, this);
 			return true;
 		}
 	}
 	return false;
+}
+
+bool CurvedSensor::toogle_vis(EmptyRequest &req, EmptyResponse &res)
+{
+	visualization_mode += 1;
+	return true;
 }
 
 void CurvedSensor::internal_update(const mjModel *model, mjData *data,
@@ -325,16 +400,43 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 	Eigen::Matrix<double, 3, Eigen::Dynamic> surface_normal_at_M3 = surface_normal_at_M.topRows<3>();
 
 	int n = taxel_point_mat.cols();
+	int m = surface_normal_mat.cols();
 
 	BVH bvh[geomCollisions.size()];
 	int bvh_idx = 0;
 	std::vector<double> pressure(n);
-	
+
+	const int n_cols = 16;
+	mjtNum sizeA[3]  = { 0.0002, 0.0002, 0.005 };
+
+	float colors[n_cols][4] = {
+		{ 0.9019607901573181, 0.09803921729326248, 0.29411765933036804, 1 },
+		{ 0.23529411852359772, 0.7058823704719543, 0.29411765933036804, 1 },
+		{ 1.0, 0.8823529481887817, 0.09803921729326248, 1 },
+		{ 0.0, 0.5098039507865906, 0.7843137383460999, 1 },
+		{ 0.9607843160629272, 0.5098039507865906, 0.1882352977991104, 1 },
+		{ 0.27450981736183167, 0.9411764740943909, 0.9411764740943909, 1 },
+		{ 0.9411764740943909, 0.19607843458652496, 0.9019607901573181, 1 },
+		{ 0.9803921580314636, 0.7450980544090271, 0.8313725590705872, 1 },
+		{ 0.0, 0.501960813999176, 0.501960813999176, 1 },
+		{ 0.8627451062202454, 0.7450980544090271, 1.0, 1 },
+		{ 0.6666666865348816, 0.4313725531101227, 0.1568627506494522, 1 },
+		{ 1.0, 0.9803921580314636, 0.7843137383460999, 1 },
+		{ 0.501960813999176, 0.0, 0.0, 1 },
+		{ 0.6666666865348816, 1.0, 0.7647058963775635, 1 },
+		{ 0.0, 0.0, 0.501960813999176, 1 },
+		{ 0.501960813999176, 0.501960813999176, 0.501960813999176, 1 },
+	};
+
 	for (GeomCollisionPtr gc : geomCollisions) {
 		if (gc->g1 == id or gc->g2 == id) {
 			bvh[bvh_idx] = BVH(gc->s);
 			bvh_idx++;
 		}
+	}
+	double t_array[m];
+	for (int j = 0; j < m; ++j) {
+		t_array[j] = 0;
 	}
 	if (bvh_idx == 0) {
 		for (int i = 0; i < n; ++i) {
@@ -344,15 +446,14 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 	} else {
 		TLAS tlas(bvh, bvh_idx);
 		tlas.build();
+
 		for (int i = 0; i < n; ++i) {
 			pressure[i] = 0;
 			for (int j0 = 0; j0 < surface_idx[i].size(); ++j0) {
 				int j = surface_idx[i][j0];
 
-				float3 normal =
-				    float3(surface_normal_at_M3(0, j), surface_normal_at_M3(1, j), surface_normal_at_M3(2, j));
-				float3 surface_point =
-				    float3(surface_at_M3(0, j), surface_at_M3(1, j), surface_at_M3(2, j));
+				float3 normal = float3(surface_normal_at_M3(0, j), surface_normal_at_M3(1, j), surface_normal_at_M3(2, j));
+				float3 surface_point = float3(surface_at_M3(0, j), surface_at_M3(1, j), surface_at_M3(2, j));
 
 				Ray ray;
 				ray.d0.data.O = surface_point + normal * 1e-8;
@@ -366,38 +467,40 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 				// intersection functions, to directly discard AABBs that are too far away and avoid more
 				// intersection tests
 
-				if (ray.hit.t < 1e30f && ray.hit.t > 0.0f) {
+				if (ray.hit.t < include_margin && ray.hit.t > 0.0f) {
 					const Eigen::Vector3d bary(1 - ray.hit.u - ray.hit.v, ray.hit.u, ray.hit.v);
 					uint tri_idx  = ray.hit.bvh_triangle & 0xFFFFF;
 					uint blas_idx = ray.hit.bvh_triangle >> 20;
 					double raw    = tlas.blas[blas_idx].surface->tri_e_MN().Evaluate(tri_idx, bary);
 					pressure[i] += surface_weight[i][j0] * raw;
+					t_array[j] = ray.hit.t;
 				}
 			}
 			tactile_state_msg_.sensors[0].values[i] = pressure[i];
 		}
 	}
-
+	bool weight_colors = false;
 	if (visualize) {
-		float colors[24][4] = {
-			{ 0, 0, 0.5, 0.5 },   { 0, 0, 1, 0.5 },     { 0, 0.5, 0, 0.5 },   { 0, 0.5, 0.5, 0.5 }, { 0, 0.5, 1, 0.5 },
-			{ 0, 1, 0, 0.5 },     { 0, 1, 0.5, 0.5 },   { 0, 1, 1, 0.5 },     { 0.5, 0, 0, 0.5 },   { 0.5, 0, 0.5, 0.5 },
-			{ 0.5, 0, 1, 0.5 },   { 0.5, 0.5, 0, 0.5 }, { 0.5, 0.5, 1, 0.5 }, { 0.5, 1, 0, 0.5 },   { 0.5, 1, 0.5, 0.5 },
-			{ 0.5, 1, 1, 0.5 },   { 1, 0, 0, 0.5 },     { 1, 0, 0.5, 0.5 },   { 1, 0, 1, 0.5 },     { 1, 0.5, 0, 0.5 },
-			{ 1, 0.5, 0.5, 0.5 }, { 1, 0.5, 1, 0.5 },   { 1, 1, 0, 0.5 },     { 1, 1, 0.5, 0.5 },
-		};
+		for (int i = 0; i < n_cols; ++i) {
+			colors[i][3] = 1;
+		}
 
 		const float red[4]   = { 1, 0, 0, 1 };
 		const float blue[4]  = { 0, 0, 1, 1 };
 		const float green[4] = { 0, 1, 0, 1 };
 		mjtNum pos[3], posS[3], tmp[3];
-		mjtNum size[3]                                              = { 0.001, 0.001, 0.01 };
-		mjtNum sizeS[3]                                             = { 0.0005, 0.0005, 0.0005 };
-		mjtNum sizeA[3]                                             = { 0.0002, 0.0002, 0.005 };
+		mjtNum size[3]  = { 0.001, 0.001, 0.01 };
+		mjtNum sizeS[3] = { 0.0005, 0.0005, 0.0005 };
+		mjtNum sizeS0[3] = { 0.0001, 0.0001, 0.0001 };
+
 		Eigen::Matrix<double, 4, Eigen::Dynamic> taxels_at_M        = M * taxel_point_mat;
 		Eigen::Matrix<double, 3, Eigen::Dynamic> taxels_at_M3       = taxels_at_M.topRows<3>();
 		Eigen::Matrix<double, 4, Eigen::Dynamic> taxel_normal_at_M  = M * taxel_normal_mat;
 		Eigen::Matrix<double, 3, Eigen::Dynamic> taxel_normal_at_M3 = taxel_normal_at_M.topRows<3>();
+
+		std::vector<std::vector<int>> color_idx(m);
+		std::vector<std::vector<double>> color_weights(m);
+
 		for (int i = 0; i < n; ++i) {
 			pos[0] = taxels_at_M3(0, i);
 			pos[1] = taxels_at_M3(1, i);
@@ -407,33 +510,85 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 			const float color[4] = { scale, 0, 1.0f - scale, 1 };
 			mjtNum s             = 0.0005 + scale * 0.002;
 			mjtNum sizeP[3]      = { s, s, s };
-			initVGeom(mjGEOM_SPHERE, sizeP, pos, NULL, color);
+			// initVGeom(mjGEOM_SPHERE, sizeP, pos, NULL, colors[i % n_cols]);
 
 			if (taxel_normal_at_M3.col(i).squaredNorm() == 0) {
-				initVGeom(mjGEOM_SPHERE, size, pos, NULL, colors[i % 24]);
+				initVGeom(mjGEOM_SPHERE, size, pos, NULL, colors[i % n_cols]);
 			} else {
-				tmp[0] = pos[0] + 0.01 * taxel_normal_at_M3(0, i);
-				tmp[1] = pos[1] + 0.01 * taxel_normal_at_M3(1, i);
-				tmp[2] = pos[2] + 0.01 * taxel_normal_at_M3(2, i);
+				tmp[0] = pos[0] + 0.005 * taxel_normal_at_M3(0, i);
+				tmp[1] = pos[1] + 0.005 * taxel_normal_at_M3(1, i);
+				tmp[2] = pos[2] + 0.005 * taxel_normal_at_M3(2, i);
 
-				if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
+				if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM && visualization_mode > 1 ) {
 					mjvGeom *g = vGeoms + n_vGeom++;
-					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, NULL, colors[i % 24]);
+					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, NULL, colors[i % n_cols]);
 					mjv_connector(g, mjGEOM_ARROW, 0.0004, pos, tmp);
 				}
 			}
-			for (int j : surface_idx[i]) {
+
+			for (int j0 = 0; j0 < surface_idx[i].size(); ++j0) {
+				int j = surface_idx[i][j0];
+
+				color_idx[j].push_back(i % n_cols);
+				color_weights[j].push_back(surface_weight[i][j0]);
+			}
+		}
+		for (int j = 0; j < m; ++j) {
+			if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
 				pos[0] = surface_at_M3(0, j);
 				pos[1] = surface_at_M3(1, j);
 				pos[2] = surface_at_M3(2, j);
 
-				tmp[0] = pos[0] + 0.005 * surface_normal_at_M3(0, j);
-				tmp[1] = pos[1] + 0.005 * surface_normal_at_M3(1, j);
-				tmp[2] = pos[2] + 0.005 * surface_normal_at_M3(2, j);
+				tmp[0]       = pos[0] + 0.005 * surface_normal_at_M3(0, j);
+				tmp[1]       = pos[1] + 0.005 * surface_normal_at_M3(1, j);
+				tmp[2]       = pos[2] + 0.005 * surface_normal_at_M3(2, j);
+				mjvGeom *g   = vGeoms + n_vGeom++;
+				float col[4] = { 0, 0, 0 };
+				double w     = 0;
+				double w_sum = 0;
 
-				if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
-					mjvGeom *g = vGeoms + n_vGeom++;
-					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, NULL, colors[i % 24]);
+				if (weight_colors) {
+					for (int i = 0; i < color_idx[j].size(); ++i) {
+						int cidx = color_idx[j][i];						
+						w = color_weights[j][i];
+						for (int k = 0; k < 4; ++k) {							
+							col[k] += w * colors[cidx][k]; 
+						}
+						w_sum += w;
+					}
+					for (int k = 0; k < 4; ++k) {
+						col[k] /= w_sum;
+					}
+				} else {
+					for (int i = 0; i < color_idx[j].size(); ++i) {
+						if (color_weights[j][i] > w) {
+							w = color_weights[j][i];
+							for (int k = 0; k < 4; ++k) {
+								col[k] = colors[color_idx[j][i]][k];
+							}
+						}
+					}
+				}
+			
+				if (t_array[j] > 0 and visualization_mode > 0) {
+					if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
+						float3 normal =
+						    float3(surface_normal_at_M3(0, j), surface_normal_at_M3(1, j), surface_normal_at_M3(2, j));
+						float3 surface_point = float3(surface_at_M3(0, j), surface_at_M3(1, j), surface_at_M3(2, j));
+
+						float3 hitp = -(t_array[j] + 1e-8) * 2 * normal + surface_point;
+
+						mjtNum pos1[3] = { hitp[0], hitp[1], hitp[2] };
+						mjvGeom *g     = vGeoms + n_vGeom++;
+						mjv_initGeom(g, mjGEOM_ARROW, NULL, pos, NULL, col);
+						mjv_connector(g, mjGEOM_ARROW, 0.0001, pos, pos1);
+					}
+				}
+
+				if (true) {
+					mjv_initGeom(g, mjGEOM_SPHERE, sizeS0, pos, NULL, col);
+				} else {
+					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, NULL, col);
 					mjv_connector(g, mjGEOM_ARROW, 0.0002, pos, tmp);
 				}
 			}

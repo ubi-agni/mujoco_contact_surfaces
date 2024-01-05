@@ -1,4 +1,4 @@
-<mujoco model="cnc measure">
+<mujoco model="fingertip">
     <option collision="all" timestep="0.001" gravity="0 0 -0" cone="elliptic" />
     <compiler angle="radian" />
     <statistic extent="1.5" meansize=".05" />
@@ -31,8 +31,10 @@
     </visual>
 
     <asset>
-        <texture type="skybox" builtin="gradient" rgb1="0.6 0.6 0.6" rgb2="0 0 0" width="512"
+        <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="1 1 1" width="512"
             height="512" />
+            <!-- <texture type="skybox" builtin="gradient" rgb1="0.6 0.6 0.6" rgb2="0 0 0" width="512"
+            height="512" /> -->
         <texture builtin="checker" height="512" name="texplane" rgb1=".2 .3 .4" rgb2=".1 .15 .2"
             type="2d" width="512" />
         <material name="MatPlane" reflectance="0.05" shininess="0.01" specular="0.01"
@@ -41,12 +43,12 @@
         
     </asset>
 
-    <worldbody>
+    <!-- <worldbody>
         <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
             dir="0 0 -1" castshadow="false" />
         <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
         <geom name="ground_plane" type="plane" size="5 5 10" material="MatPlane" rgba="1 1 1 1" />
-    </worldbody>
+    </worldbody> -->
 
     <worldbody>
         <body name="box_body">
@@ -56,7 +58,7 @@
 
         <body name="fingertip_body" pos="-0.02 0 0.07" euler="0 2.356194490192345 1.5707963267948966">
             <freejoint/>
-            <geom name="fingertip_geom" type="mesh" mesh="ubi_tip_collision" rgba="0.5 0.5 0.5 0.4"/>
+            <geom name="fingertip_geom" type="mesh" mesh="ubi_tip_collision" rgba="0.5 0.5 0.5 1"/>
         </body>
 
         <body name="mocap" mocap="true" pos="-0.02 0 0.07" euler="0 2.356194490192345 1.5707963267948966">

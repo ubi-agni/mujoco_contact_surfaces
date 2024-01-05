@@ -21,9 +21,9 @@
       A rigid object has hydroelasticModulus of 0 and dissipation of 1. 
       A soft box with a resolution hint of 0 uses a resolution automatically computed by drake. -->
     <numeric name="cs::box_geom" data="2.5e6 5.0 0 0.0 0.0" />
-    <numeric name="cs::sphere_geom" data="5e6 1.0 0.005 0.3 0.3" />
-    <numeric name="cs::cylinder0_geom" data="7.5e6 5.0 0.005 0.0 0.0" />
-    <numeric name="cs::cylinder1_geom" data="7.5e6 5.0 0.005 0.0 0.0" />
+    <numeric name="cs::sphere_geom" data="5e2 0.1 0.005 0.3 0.3" />
+    <numeric name="cs::cylinder0_geom" data="5e2 0.1 0.01 1 1" />
+    <numeric name="cs::cylinder1_geom" data="5e2 0.1 0.01 1 1" />
 
   </custom>
 

@@ -28,6 +28,32 @@ include_directories(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 find_package(drake REQUIRED)
 find_package(OpenMP REQUIRED)
 
+if (VCGDIR) # VCGDIR exists - using custom user vcglib path
+	if(EXISTS ${VCGDIR})
+		add_subdirectory(${VCGDIR} {CMAKE_CURRENT_BINARY_DIR}/vcglib)
+		message(STATUS "- VCGLib - using custom VCGDIR path library")
+	else()
+		set(VCGDIR NOTFOUND)
+	endif()
+else()
+	get_filename_component(VCGDIR "${CMAKE_CURRENT_LIST_DIR}/vcglib" ABSOLUTE)
+	if(EXISTS ${VCGDIR})
+		add_subdirectory(${VCGDIR})
+		message(STATUS "- VCGLib - using bundled source")
+	else()
+		set(VCGDIR NOTFOUND)
+	endif()
+endif()
+set(VCGDIR "${VCGDIR}")
+
+if(NOT VCGDIR)
+	message(FATAL_ERROR "VCGLib not found. Please clone recursively the MeshLab repo.")
+else ()
+	message(STATUS "- VCGLib directory: " ${VCGDIR})
+endif()
+#   message(STATUS "- VCGLib - using bundled source")
+# endif()
+
 catkin_package(
  CATKIN_DEPENDS
   pluginlib
@@ -42,6 +68,7 @@ include_directories(
     ${mujoco_contact_surfaces_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
     ${drake_INCLUDE_DIRS}
+    ${VCGDIR}
 )
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -80,6 +107,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   ${mujoco_contact_surfaces_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${drake_INCLUDE_DIRS}
+  ${VCGDIR}
 )
 target_link_libraries(${PROJECT_NAME}
   ${mujoco_contact_surfaces_LIBRARIES}
