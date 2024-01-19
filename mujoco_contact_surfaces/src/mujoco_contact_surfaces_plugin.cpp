@@ -632,6 +632,9 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(const mjModel *m)
 						case mjGEOM_HFIELD: // height field
 							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "hfield collision not implemented yet");
 							break;
+						case mjGEOM_CAPSULE: // capsule
+							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "capsule collision not implemented yet");
+							break;
 						case mjGEOM_SPHERE: // sphere
 						{
 							Sphere *sphere = new Sphere(m->geom_size[3 * id]);
@@ -654,12 +657,30 @@ void MujocoContactSurfacesPlugin::parseMujocoCustomFields(const mjModel *m)
 							contactProperties[id] = cp;
 							break;
 						}
-						case mjGEOM_CAPSULE: // capsule
-							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "capsule collision not implemented yet");
-							break;
 						case mjGEOM_ELLIPSOID: // ellipsoid
-							ROS_INFO_STREAM_NAMED("mujoco_contact_surfaces", "ellipsoid collision not implemented yet");
+						{
+							Ellipsoid *ellipsoid =
+							    new Ellipsoid(m->geom_size[3 * id], m->geom_size[3 * id + 1], m->geom_size[3 * id + 2]);
+							if (hydroElasticModulus > 0) {
+								VolumeMesh<double> *vm;
+								vm = new VolumeMesh<double>(MakeEllipsoidVolumeMesh<double>(
+								    *ellipsoid, resolutionHint, TessellationStrategy::kSingleInteriorVertex));
+								VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+								    MakeEllipsoidPressureField<double>(*ellipsoid, vm, hydroElasticModulus));
+								Bvh<Obb, VolumeMesh<double>> *bvh = new Bvh<Obb, VolumeMesh<double>>(*vm);
+								cp.reset(new ContactProperties(id, s, SOFT, ellipsoid, vm, pf, bvh, hydroElasticModulus,
+								                               dissipation, staticFriction, dynamicFriction, resolutionHint));
+							} else {
+								TriangleSurfaceMesh<double> *sm = new TriangleSurfaceMesh<double>(
+								    MakeEllipsoidSurfaceMesh<double>(*ellipsoid, resolutionHint));
+								Bvh<Obb, TriangleSurfaceMesh<double>> *bvh = new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm);
+								cp.reset(new ContactProperties(id, s, RIGID, ellipsoid, sm, bvh, staticFriction,
+								                               dynamicFriction, resolutionHint));
+							}
+
+							contactProperties[id] = cp;
 							break;
+						}
 						case mjGEOM_CYLINDER: // cylinder
 						{
 							Cylinder *cylinder = new Cylinder(m->geom_size[3 * id], 2 * m->geom_size[3 * id + 1]);
@@ -815,6 +836,27 @@ void MujocoContactSurfacesPlugin::onGeomChanged(const mjModel *m, mjData *d, con
 				} else {
 					TriangleSurfaceMesh<double> *sm =
 					    new TriangleSurfaceMesh<double>(MakeSphereSurfaceMesh<double>(*sphere, cp->resolution_hint));
+
+					cp->sm = sm;
+					cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));
+				}
+				break;
+			}
+			case mjGEOM_ELLIPSOID: // ellipsoid
+			{
+				Ellipsoid *ellipsoid =
+				    new Ellipsoid(m->geom_size[3 * id], m->geom_size[3 * id + 1], m->geom_size[3 * id + 2]);
+				cp->shape = ellipsoid;
+				if (cp->contact_type == SOFT) {
+					VolumeMesh<double> *vm                    = new VolumeMesh<double>(MakeEllipsoidVolumeMesh<double>(
+                   *ellipsoid, cp->resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+					VolumeMeshFieldLinear<double, double> *pf = new VolumeMeshFieldLinear<double, double>(
+					    MakeEllipsoidPressureField<double>(*ellipsoid, vm, cp->hydroelastic_modulus));
+					cp->vm = vm;
+					cp->bvh_v.reset(new Bvh<Obb, VolumeMesh<double>>(*vm));
+				} else {
+					TriangleSurfaceMesh<double> *sm =
+					    new TriangleSurfaceMesh<double>(MakeEllipsoidSurfaceMesh<double>(*ellipsoid, cp->resolution_hint));
 
 					cp->sm = sm;
 					cp->bvh_s.reset(new Bvh<Obb, TriangleSurfaceMesh<double>>(*sm));

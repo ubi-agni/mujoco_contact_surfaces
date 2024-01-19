@@ -93,6 +93,8 @@
 #include <drake/geometry/proximity/make_box_field.h>
 #include <drake/geometry/proximity/make_cylinder_mesh.h>
 #include <drake/geometry/proximity/make_cylinder_field.h>
+#include <drake/geometry/proximity/make_ellipsoid_mesh.h>
+#include <drake/geometry/proximity/make_ellipsoid_field.h>
 #include <drake/geometry/proximity/make_convex_field.h>
 #include <drake/geometry/proximity/make_convex_mesh.h>
 #include <drake/geometry/proximity/volume_to_surface_mesh.h>
