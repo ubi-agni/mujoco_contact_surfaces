@@ -28,6 +28,17 @@ include_directories(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 find_package(drake REQUIRED)
 find_package(OpenMP REQUIRED)
 
+add_service_files(
+  FILES
+  TactileState.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+    tactile_msgs
+    std_msgs
+)
+
 catkin_package(
  CATKIN_DEPENDS
   pluginlib

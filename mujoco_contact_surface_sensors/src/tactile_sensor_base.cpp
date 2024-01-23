@@ -38,6 +38,26 @@
 
 namespace mujoco_ros::contact_surfaces::sensors {
 
+bool TactileSensorBase::requestTactileStateCB(mujoco_contact_surface_sensors::TactileState::Request &request,
+                                              mujoco_contact_surface_sensors::TactileState::Response &response)
+{
+	std::unique_lock state_lock(state_request_mutex);
+	request_state = true;
+	state_cv.wait(state_lock, [=]{ return !request_state; });
+	response.tactile_state = tactile_state_msg_;
+	response.success       = true;
+	return true;
+}
+
+bool TactileSensorBase::setPauseCB(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response)
+{
+	std::lock_guard pause_lock(pause_mutex);
+	paused           = request.data;
+	response.success = true;
+	n_vGeom          = 0;
+	return true;
+}
+
 bool TactileSensorBase::load(const mjModel *m, mjData *d)
 {
 	if (rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct && rosparam_config_.hasMember("geomName") &&
@@ -57,6 +77,8 @@ bool TactileSensorBase::load(const mjModel *m, mjData *d)
 			if (rosparam_config_.hasMember("visualize")) {
 				visualize = static_cast<bool>(rosparam_config_["visualize"]);
 			}
+			pause_service = node_handle_.advertiseService(topicName + "/set_pause", &TactileSensorBase::setPauseCB, this);
+			state_request_service = node_handle_.advertiseService(topicName + "/get_state", &TactileSensorBase::requestTactileStateCB, this);
 			return true;
 		}
 	}
@@ -65,15 +87,16 @@ bool TactileSensorBase::load(const mjModel *m, mjData *d)
 
 void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions)
 {
+	std::lock_guard pause_lock(pause_mutex);
 	auto now = ros::Time::now();
 	if (now < lastUpdate) { // reset lastUpdate after jump back in time
 		lastUpdate = ros::Time();
 	}
+
 	// if enough time has passed do a sensor update
-	if (now - lastUpdate >= updatePeriod) {
+	if (now - lastUpdate >= updatePeriod && !paused) {
 		lastUpdate = now;
 		n_vGeom    = 0;
-		int id     = geomID;
 		internal_update(m, d, geomCollisions);
 
 		// publish sensor data
@@ -81,6 +104,17 @@ void TactileSensorBase::update(const mjModel *m, mjData *d, const std::vector<Ge
 			tactile_state_msg_.header.stamp = now;
 			publisher.publish(tactile_state_msg_);
 		}
+	}
+	std::unique_lock state_lock(state_request_mutex);
+	if (request_state) {
+		n_vGeom = 0;
+		internal_update(m, d, geomCollisions);
+		tactile_state_msg_.header.stamp = now;
+		request_state                   = false;
+		state_lock.unlock();
+		state_cv.notify_one();
+	} else {
+		state_lock.unlock();
 	}
 }
 

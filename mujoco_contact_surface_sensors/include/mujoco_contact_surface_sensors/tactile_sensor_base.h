@@ -37,6 +37,9 @@
 
 #include <mujoco_contact_surfaces/plugin_utils.h>
 #include <tactile_msgs/TactileState.h>
+#include <std_srvs/SetBool.h>
+#include <mujoco_contact_surface_sensors/TactileState.h>
+#include <condition_variable>
 
 namespace mujoco_ros::contact_surfaces::sensors {
 using namespace mujoco_ros::contact_surfaces;
@@ -90,6 +93,13 @@ protected:
 	int n_vGeom = 0;
 	bool initVGeom(int type, const mjtNum size[3], const mjtNum pos[3], const mjtNum mat[9], const float rgba[4]);
 	virtual void internal_update(const mjModel *m, mjData *d, const std::vector<GeomCollisionPtr> &geomCollisions){};
+	std::mutex pause_mutex, state_request_mutex;
+	std::condition_variable state_cv;
+	bool request_state = false;
+	bool paused = false;
+	bool setPauseCB(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response);
+	bool requestTactileStateCB(mujoco_contact_surface_sensors::TactileState::Request &request, mujoco_contact_surface_sensors::TactileState::Response &response);
+	ros::ServiceServer pause_service, state_request_service;
 
 private:
 };
