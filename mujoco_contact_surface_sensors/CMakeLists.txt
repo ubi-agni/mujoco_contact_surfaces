@@ -50,6 +50,17 @@ if(NOT vcg_DIR)
   endif()
 endif()
 
+add_service_files(
+  FILES
+  GetTactileState.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+    tactile_msgs
+    std_msgs
+)
+
 catkin_package(
  CATKIN_DEPENDS
   pluginlib

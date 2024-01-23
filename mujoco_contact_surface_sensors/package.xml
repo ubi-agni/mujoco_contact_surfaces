@@ -13,11 +13,16 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>message_generation</build_depend>
   <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
 
   <depend>pluginlib</depend>
   <depend>mujoco_contact_surfaces</depend>
   <depend>tactile_msgs</depend>
+
+
+  <build_export_depend>message_runtime</build_export_depend>
 
   <export>
     <mujoco_contact_surfaces plugin="${prefix}/mujoco_contact_surface_sensors_plugin.xml" />
