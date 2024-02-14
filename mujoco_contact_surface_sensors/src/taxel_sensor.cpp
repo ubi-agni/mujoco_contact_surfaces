@@ -121,13 +121,13 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 				                             "refpos or refquat for the mesh.");
 
 				// apply geom offset to taxel poses
-				mjMARKSTACK;
+				mj_markStack(d);
 				// int id = geomID;
 				Eigen::Matrix4d M;
-				mjtNum *R = mj_stackAlloc(d, 9);
+				mjtNum *R = mj_stackAllocNum(d, 9);
 
-				mjtNum *p = mj_stackAlloc(d, 3);
-				mjtNum *q = mj_stackAlloc(d, 4);
+				mjtNum *p = mj_stackAllocNum(d, 3);
+				mjtNum *q = mj_stackAllocNum(d, 4);
 
 				mju_negPose(p, q, p0, q0);
 
@@ -139,7 +139,7 @@ bool TaxelSensor::load(const mjModel *m, mjData *d)
 				// mju_printMat(p0, 1, 3);
 				// mju_printMat(q0, 1, 4);
 				// std::cout << taxel_mat.topRows<3>().transpose() << std::endl;
-				mjFREESTACK;
+				mj_freeStack(d);
 			}
 		}
 

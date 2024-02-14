@@ -208,11 +208,11 @@ bool CurvedSensor::load(const mjModel *m, mjData *d)
 				                             "refpos or refquat for the mesh.");
 
 				// apply geom offset to taxel poses
-				mjMARKSTACK;
+				mj_markStack(d);
 				Eigen::Matrix4d M;
-				mjtNum *R = mj_stackAlloc(d, 9);
-				mjtNum *p = mj_stackAlloc(d, 3);
-				mjtNum *q = mj_stackAlloc(d, 4);
+				mjtNum *R = mj_stackAllocNum(d, 9);
+				mjtNum *p = mj_stackAllocNum(d, 3);
+				mjtNum *q = mj_stackAllocNum(d, 4);
 
 				mju_negPose(p, q, p0, q0);
 
@@ -222,7 +222,7 @@ bool CurvedSensor::load(const mjModel *m, mjData *d)
 
 				taxel_point_mat  = M * taxel_point_mat;
 				taxel_normal_mat = M * taxel_normal_mat;
-				mjFREESTACK;
+				mj_freeStack(d);
 			}
 		}
 		int n = taxel_point_mat.cols();
@@ -489,8 +489,8 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 		const float blue[4]  = { 0, 0, 1, 1 };
 		const float green[4] = { 0, 1, 0, 1 };
 		mjtNum pos[3], posS[3], tmp[3];
-		mjtNum size[3]  = { 0.001, 0.001, 0.01 };
-		mjtNum sizeS[3] = { 0.0005, 0.0005, 0.0005 };
+		mjtNum size[3]   = { 0.001, 0.001, 0.01 };
+		mjtNum sizeS[3]  = { 0.0005, 0.0005, 0.0005 };
 		mjtNum sizeS0[3] = { 0.0001, 0.0001, 0.0001 };
 
 		Eigen::Matrix<double, 4, Eigen::Dynamic> taxels_at_M        = M * taxel_point_mat;
@@ -519,7 +519,7 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 				tmp[1] = pos[1] + 0.005 * taxel_normal_at_M3(1, i);
 				tmp[2] = pos[2] + 0.005 * taxel_normal_at_M3(2, i);
 
-				if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM && visualization_mode > 1 ) {
+				if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM && visualization_mode > 1) {
 					mjvGeom *g = vGeoms + n_vGeom++;
 					mjv_initGeom(g, mjGEOM_ARROW, sizeA, pos, NULL, colors[i % n_cols]);
 					mjv_connector(g, mjGEOM_ARROW, 0.0004, pos, tmp);
@@ -549,10 +549,10 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 
 				if (weight_colors) {
 					for (int i = 0; i < color_idx[j].size(); ++i) {
-						int cidx = color_idx[j][i];						
-						w = color_weights[j][i];
-						for (int k = 0; k < 4; ++k) {							
-							col[k] += w * colors[cidx][k]; 
+						int cidx = color_idx[j][i];
+						w        = color_weights[j][i];
+						for (int k = 0; k < 4; ++k) {
+							col[k] += w * colors[cidx][k];
 						}
 						w_sum += w;
 					}
@@ -569,7 +569,7 @@ void CurvedSensor::internal_update(const mjModel *model, mjData *data,
 						}
 					}
 				}
-			
+
 				if (t_array[j] > 0 and visualization_mode > 0) {
 					if (n_vGeom < mujoco_ros::contact_surfaces::MAX_VGEOM) {
 						float3 normal =
