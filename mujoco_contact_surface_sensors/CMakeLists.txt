@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.11)
 
 project(mujoco_contact_surface_sensors)
 add_definitions(-std=c++17)
@@ -11,6 +11,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(USE_SSE "Use SSE4 instructions, if available" ON)
 option(ENABLE_TACT_BENCHMARK "Build tactile sensors with benchmarking support" OFF)
+
+
+set(SURFACE_SENSORS_DEP_VERSION_VCGLIB
+    edf834918fa5964096216a7d458eda08768d49ae
+    CACHE STRING "Version of 'vcg' to be fetched."
+)
 
 find_package(catkin REQUIRED COMPONENTS
   pluginlib
@@ -28,31 +34,21 @@ include_directories(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 find_package(drake REQUIRED)
 find_package(OpenMP REQUIRED)
 
-if (VCGDIR) # VCGDIR exists - using custom user vcglib path
-	if(EXISTS ${VCGDIR})
-		add_subdirectory(${VCGDIR} {CMAKE_CURRENT_BINARY_DIR}/vcglib)
-		message(STATUS "- VCGLib - using custom VCGDIR path library")
-	else()
-		set(VCGDIR NOTFOUND)
-	endif()
-else()
-	get_filename_component(VCGDIR "${CMAKE_CURRENT_LIST_DIR}/vcglib" ABSOLUTE)
-	if(EXISTS ${VCGDIR})
-		add_subdirectory(${VCGDIR})
-		message(STATUS "- VCGLib - using bundled source")
-	else()
-		set(VCGDIR NOTFOUND)
-	endif()
-endif()
-set(VCGDIR "${VCGDIR}")
+include(FetchContent)
+if(NOT vcg_DIR)
+  FetchContent_Declare(
+    vcg
+    GIT_REPOSITORY https://github.com/cnr-isti-vclab/vcglib.git
+    GIT_TAG ${SURFACE_SENSORS_DEP_VERSION_VCGLIB}
+  )
 
-if(NOT VCGDIR)
-	message(FATAL_ERROR "VCGLib not found. Please clone recursively the MeshLab repo.")
-else ()
-	message(STATUS "- VCGLib directory: " ${VCGDIR})
+  FetchContent_GetProperties(vcg)
+  if(NOT vcg_POPULATED)
+    FetchContent_Populate(vcg)
+    # This is not a CMake project.
+    set(vcg_DIR ${vcg_SOURCE_DIR})
+  endif()
 endif()
-#   message(STATUS "- VCGLib - using bundled source")
-# endif()
 
 catkin_package(
  CATKIN_DEPENDS
@@ -68,7 +64,7 @@ include_directories(
     ${mujoco_contact_surfaces_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
     ${drake_INCLUDE_DIRS}
-    ${VCGDIR}
+    ${vcg_DIR}
 )
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -107,7 +103,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   ${mujoco_contact_surfaces_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${drake_INCLUDE_DIRS}
-  ${VCGDIR}
+  ${vcg_DIR}
 )
 target_link_libraries(${PROJECT_NAME}
   ${mujoco_contact_surfaces_LIBRARIES}
