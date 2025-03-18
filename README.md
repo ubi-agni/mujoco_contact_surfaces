@@ -18,9 +18,42 @@ For more information refer to:
 
 ## Cite
 
-If you are using this repository in your reasearch, please cite the following in your publications:
+If you are using this repository in your reasearch, please cite the following works in your publications accordingly:
 
 ```bibtex
+
+@online{
+  leinsHydroelasticTouchSimulationTactile2025,
+  title = {{{HydroelasticTouch}}: {{Simulation}} of {{Tactile Sensors}} with {{Hydroelastic Contact Surfaces}}},
+  shorttitle = {{{HydroelasticTouch}}},
+  author = {Leins, David P. and Patzelt, Florian and Haschke, Robert},
+  date = {2025-01-14},
+  eprint = {2501.08077},
+  eprinttype = {arXiv},
+  eprintclass = {cs},
+  doi = {10.48550/arXiv.2501.08077},
+  url = {http://arxiv.org/abs/2501.08077},
+  pubstate = {prepublished},
+}
+
+@inproceedings{
+  leinsMuJoCoROSIntegrating2025,
+  title = {{{MuJoCo ROS}}: {{Integrating ROS}} with the {{MuJoCo}} Engine for Accurate and Scalable Robotic Simulation},
+  booktitle = {2025 {{IEEE}} International Conference on Simulation, Modeling, and Programming for Autonomous Robots ({{SIMPAR}})},
+  author = {Leins, David P. and Haschke, Robert and Ritter, Helge},
+  date = {2025},
+  publisher = {IEEE. in press}
+}
+
+@inproceedings{
+  patzeltCurvedTactileSensor2023,
+  title = {Curved {{Tactile Sensor Simulation}} with {{Hydroelastic Contacts}} in {{MuJoCo}}},
+  author = {Patzelt, Florian and Leins, David and Haschke, Robert},
+  year = {2023},
+  booktitle = {NeurIPS 2023 Workshop on Touch Processing: a new Sensing Modality for AI},
+  url = {https://www.touchprocessing.org/2023/#accepted-papers},
+}
+
 @inproceedings{
     leins2023more,
     title={More Accurate Tactile Sensor Simulation with Hydroelastic Contacts in MuJoCo},
